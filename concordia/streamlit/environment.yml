@@ -1,0 +1,8 @@
+name: concordia
+channels:
+  - snowflake
+dependencies:
+  - streamlit=1.42.0
+  - altair=5.5.0
+  - pandas=2.2.3
+  - snowflake-snowpark-python

@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+.pytest_cache/
+data/generated/*
+!data/generated/deck_facts.json
+!data/generated/verification.json
+*.pyc

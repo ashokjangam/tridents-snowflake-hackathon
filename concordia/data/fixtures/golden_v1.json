@@ -1,0 +1,1125 @@
+[
+  {
+    "id": "m1-hero",
+    "contract": "CONCORDIA_SIM_V1",
+    "metric_id": "INBOUND_SUPPLIER_OTD",
+    "as_of": ["2026-06-05T23:59:59Z", "2026-07-15T23:59:59Z"],
+    "period": ["2026-05-01", "2026-05-31"],
+    "scope": {"item_id": "MM-440", "facility_id": "FAC-DAYTON"},
+    "lines": [
+      {
+        "line_id": "PO-A",
+        "item_id": "MM-440",
+        "facility_id": "FAC-DAYTON",
+        "timezone": "America/New_York",
+        "calendar": {"id": "CAL-WEEKDAY", "shutdowns": []},
+        "ordered_qty": "100",
+        "issued_on": "2026-05-01",
+        "buyer_requested_on": "2026-05-06",
+        "ack_on": "2026-05-05",
+        "ack_promise_on": "2026-05-06",
+        "ack_visible_at": "2026-05-05T16:00:00Z",
+        "accepted": [{"on": "2026-05-06", "qty": "100", "visible_at": "2026-05-06T18:00:00Z"}]
+      },
+      {
+        "line_id": "PO-B",
+        "item_id": "MM-440",
+        "facility_id": "FAC-DAYTON",
+        "timezone": "America/New_York",
+        "calendar": {"id": "CAL-WEEKDAY", "shutdowns": []},
+        "ordered_qty": "100",
+        "issued_on": "2026-05-04",
+        "buyer_requested_on": "2026-05-11",
+        "supplier_rejected_qty": "20",
+        "accepted": [{"on": "2026-05-12", "qty": "40", "visible_at": "2026-05-12T18:00:00Z"}]
+      },
+      {
+        "line_id": "PO-C",
+        "item_id": "MM-440",
+        "facility_id": "FAC-DAYTON",
+        "timezone": "America/New_York",
+        "calendar": {"id": "CAL-WEEKDAY", "shutdowns": []},
+        "ordered_qty": "50",
+        "issued_on": "2026-05-04",
+        "buyer_requested_on": "2026-05-08",
+        "plant_hold_qty": "50",
+        "accepted": [{"on": "2026-05-08", "qty": "50", "visible_at": "2026-05-08T18:00:00Z"}]
+      }
+    ],
+    "expected": {
+      "status": "COMPLETE",
+      "numerator": "2",
+      "denominator": "3",
+      "display": "0.6667",
+      "reasons": [],
+      "coverage": "1.000000",
+      "excluded_count": 0,
+      "affected_commitments": 1,
+      "affected_units": "100.000000",
+      "unresolved_records": 0
+    }
+  },
+  {
+    "id": "m1-supplier-hold",
+    "contract": "CONCORDIA_SIM_V1",
+    "metric_id": "INBOUND_SUPPLIER_OTD",
+    "as_of": ["2026-06-05T23:59:59Z"],
+    "period": ["2026-05-01", "2026-05-31"],
+    "scope": {"item_id": "MM-440"},
+    "lines": [
+      {
+        "line_id": "PO-HOLD",
+        "item_id": "MM-440",
+        "facility_id": "FAC-DAYTON",
+        "timezone": "America/New_York",
+        "calendar": {"id": "CAL-WEEKDAY", "shutdowns": []},
+        "ordered_qty": "100",
+        "issued_on": "2026-05-04",
+        "buyer_requested_on": "2026-05-11",
+        "supplier_rejected_qty": "100",
+        "accepted": []
+      }
+    ],
+    "expected": {
+      "status": "COMPLETE",
+      "numerator": "0",
+      "denominator": "1",
+      "display": "0.0000",
+      "reasons": [],
+      "coverage": "1.000000",
+      "excluded_count": 0,
+      "affected_commitments": 1,
+      "affected_units": "100.000000",
+      "unresolved_records": 0
+    }
+  },
+  {
+    "id": "m1-partial-then-complete",
+    "contract": "CONCORDIA_SIM_V1",
+    "metric_id": "INBOUND_SUPPLIER_OTD",
+    "as_of": ["2026-06-05T23:59:59Z"],
+    "period": ["2026-05-01", "2026-05-31"],
+    "scope": {},
+    "lines": [
+      {
+        "line_id": "PO-COMPLETE",
+        "item_id": "MM-440",
+        "facility_id": "FAC-DAYTON",
+        "timezone": "America/New_York",
+        "calendar": {"id": "CAL-WEEKDAY", "shutdowns": []},
+        "ordered_qty": "100",
+        "issued_on": "2026-05-04",
+        "buyer_requested_on": "2026-05-15",
+        "accepted": [
+          {"on": "2026-05-10", "qty": "40", "visible_at": "2026-05-10T18:00:00Z"},
+          {"on": "2026-05-14", "qty": "60", "visible_at": "2026-05-14T18:00:00Z"}
+        ]
+      }
+    ],
+    "expected": {
+      "status": "COMPLETE",
+      "numerator": "1",
+      "denominator": "1",
+      "display": "1.0000",
+      "reasons": [],
+      "coverage": "1.000000",
+      "excluded_count": 0,
+      "affected_commitments": 0,
+      "affected_units": "0.000000",
+      "unresolved_records": 0
+    }
+  },
+  {
+    "id": "m1-ack-late",
+    "contract": "CONCORDIA_SIM_V1",
+    "metric_id": "INBOUND_SUPPLIER_OTD",
+    "as_of": ["2026-06-05T23:59:59Z"],
+    "period": ["2026-05-01", "2026-05-31"],
+    "scope": {},
+    "lines": [
+      {
+        "line_id": "PO-LATE-ACK",
+        "item_id": "MM-440",
+        "facility_id": "FAC-DAYTON",
+        "timezone": "America/New_York",
+        "calendar": {"id": "CAL-WEEKDAY", "shutdowns": []},
+        "ordered_qty": "10",
+        "issued_on": "2026-05-01",
+        "buyer_requested_on": "2026-05-04",
+        "ack_on": "2026-05-06",
+        "ack_promise_on": "2026-05-20",
+        "ack_visible_at": "2026-05-06T16:00:00Z",
+        "reconfirmation_promise_on": "2026-05-28",
+        "accepted": [{"on": "2026-05-05", "qty": "10", "visible_at": "2026-05-05T18:00:00Z"}]
+      }
+    ],
+    "expected": {
+      "status": "COMPLETE",
+      "numerator": "0",
+      "denominator": "1",
+      "display": "0.0000",
+      "reasons": [],
+      "coverage": "1.000000",
+      "excluded_count": 0,
+      "affected_commitments": 1,
+      "affected_units": "10.000000",
+      "unresolved_records": 0
+    }
+  },
+  {
+    "id": "m1-shutdown-includes-ack",
+    "contract": "CONCORDIA_SIM_V1",
+    "metric_id": "INBOUND_SUPPLIER_OTD",
+    "as_of": ["2026-06-05T23:59:59Z"],
+    "period": ["2026-05-01", "2026-05-31"],
+    "scope": {},
+    "lines": [
+      {
+        "line_id": "PO-SHUT",
+        "item_id": "MM-440",
+        "facility_id": "FAC-DAYTON",
+        "timezone": "America/New_York",
+        "calendar": {"id": "CAL-DAYTON", "shutdowns": ["2026-05-25"]},
+        "ordered_qty": "10",
+        "issued_on": "2026-05-22",
+        "buyer_requested_on": "2026-06-15",
+        "ack_on": "2026-05-27",
+        "ack_promise_on": "2026-05-27",
+        "ack_visible_at": "2026-05-27T16:00:00Z",
+        "accepted": [{"on": "2026-05-27", "qty": "10", "visible_at": "2026-05-27T18:00:00Z"}]
+      }
+    ],
+    "expected": {
+      "status": "COMPLETE",
+      "numerator": "1",
+      "denominator": "1",
+      "display": "1.0000",
+      "reasons": [],
+      "coverage": "1.000000",
+      "excluded_count": 0,
+      "affected_commitments": 0,
+      "affected_units": "0.000000",
+      "unresolved_records": 0
+    }
+  },
+  {
+    "id": "m1-without-shutdown-ack-misses-window",
+    "contract": "CONCORDIA_SIM_V1",
+    "metric_id": "INBOUND_SUPPLIER_OTD",
+    "as_of": ["2026-06-05T23:59:59Z"],
+    "period": ["2026-05-01", "2026-05-31"],
+    "scope": {},
+    "lines": [
+      {
+        "line_id": "PO-NOSHUT",
+        "item_id": "MM-440",
+        "facility_id": "FAC-DAYTON",
+        "timezone": "America/New_York",
+        "calendar": {"id": "CAL-WEEKDAY", "shutdowns": []},
+        "ordered_qty": "10",
+        "issued_on": "2026-05-22",
+        "buyer_requested_on": "2026-06-15",
+        "ack_on": "2026-05-27",
+        "ack_promise_on": "2026-05-27",
+        "ack_visible_at": "2026-05-27T16:00:00Z",
+        "accepted": [{"on": "2026-05-27", "qty": "10", "visible_at": "2026-05-27T18:00:00Z"}]
+      }
+    ],
+    "expected": {
+      "status": "ZERO_DENOMINATOR",
+      "numerator": null,
+      "denominator": null,
+      "display": null,
+      "reasons": [],
+      "coverage": null,
+      "excluded_count": 0,
+      "affected_commitments": 0,
+      "affected_units": "0.000000",
+      "unresolved_records": 0
+    }
+  },
+  {
+    "id": "m1-buyer-cancel",
+    "contract": "CONCORDIA_SIM_V1",
+    "metric_id": "INBOUND_SUPPLIER_OTD",
+    "as_of": ["2026-06-05T23:59:59Z"],
+    "period": ["2026-05-01", "2026-05-31"],
+    "scope": {},
+    "lines": [
+      {
+        "line_id": "PO-BUYER-CANCEL",
+        "item_id": "MM-440",
+        "facility_id": "FAC-DAYTON",
+        "timezone": "America/New_York",
+        "calendar": {"id": "CAL-WEEKDAY", "shutdowns": []},
+        "ordered_qty": "10",
+        "issued_on": "2026-05-04",
+        "buyer_requested_on": "2026-05-11",
+        "cancellation": "BUYER_BEFORE_COMMITMENT",
+        "accepted": []
+      }
+    ],
+    "expected": {
+      "status": "ZERO_DENOMINATOR",
+      "numerator": null,
+      "denominator": null,
+      "display": null,
+      "reasons": ["BUYER_CANCELLED"],
+      "coverage": null,
+      "excluded_count": 1,
+      "affected_commitments": 0,
+      "affected_units": "0.000000",
+      "unresolved_records": 1
+    }
+  },
+  {
+    "id": "m1-disposition-missing",
+    "contract": "CONCORDIA_SIM_V1",
+    "metric_id": "INBOUND_SUPPLIER_OTD",
+    "as_of": ["2026-06-05T23:59:59Z"],
+    "period": ["2026-05-01", "2026-05-31"],
+    "scope": {},
+    "lines": [
+      {
+        "line_id": "PO-DISP",
+        "item_id": "MM-440",
+        "facility_id": "FAC-DAYTON",
+        "timezone": "America/New_York",
+        "calendar": {"id": "CAL-WEEKDAY", "shutdowns": []},
+        "ordered_qty": "10",
+        "issued_on": "2026-05-04",
+        "buyer_requested_on": "2026-05-11",
+        "disposition_missing": true,
+        "accepted": [{"on": "2026-05-08", "qty": "10", "visible_at": "2026-05-08T18:00:00Z"}]
+      }
+    ],
+    "expected": {
+      "status": "ZERO_DENOMINATOR",
+      "numerator": null,
+      "denominator": null,
+      "display": null,
+      "reasons": ["DISPOSITION_MISSING"],
+      "coverage": null,
+      "excluded_count": 1,
+      "affected_commitments": 0,
+      "affected_units": "0.000000",
+      "unresolved_records": 1
+    }
+  },
+  {
+    "id": "m2-hero",
+    "contract": "CONCORDIA_SIM_V1",
+    "metric_id": "OUTBOUND_CUSTOMER_OTD",
+    "as_of": ["2026-06-05T23:59:59Z", "2026-07-15T23:59:59Z"],
+    "period": ["2026-05-01", "2026-05-31"],
+    "scope": {"item_id": "MM-440", "geography_id": "GEO-NORTHEAST"},
+    "lines": [
+      {
+        "line_id": "SOL-1",
+        "item_id": "MM-440",
+        "geography_id": "GEO-NORTHEAST",
+        "timezone": "America/New_York",
+        "calendar": {"id": "CAL-WEEKDAY", "shutdowns": []},
+        "incoterm": "DAP",
+        "ordered_qty": "10",
+        "original_promise_on": "2026-05-08",
+        "rating": 1,
+        "return_qty": "2",
+        "events": [{"on": "2026-05-07", "qty": "10", "kind": "POD", "visible_at": "2026-05-07T20:00:00Z"}]
+      },
+      {
+        "line_id": "SOL-2",
+        "item_id": "MM-440",
+        "geography_id": "GEO-NORTHEAST",
+        "timezone": "America/New_York",
+        "calendar": {"id": "CAL-WEEKDAY", "shutdowns": []},
+        "incoterm": "DAP",
+        "ordered_qty": "10",
+        "original_promise_on": "2026-05-12",
+        "events": [
+          {"on": "2026-05-12", "qty": "6", "kind": "POD", "visible_at": "2026-05-12T20:00:00Z"},
+          {"on": "2026-05-20", "qty": "4", "kind": "POD", "visible_at": "2026-05-20T20:00:00Z"}
+        ]
+      },
+      {
+        "line_id": "SOL-3",
+        "item_id": "MM-440",
+        "geography_id": "GEO-NORTHEAST",
+        "timezone": "America/New_York",
+        "calendar": {"id": "CAL-WEEKDAY", "shutdowns": []},
+        "incoterm": "DAP",
+        "ordered_qty": "10",
+        "original_promise_on": "2026-05-15",
+        "events": [
+          {"on": "2026-05-14", "qty": "10", "kind": "ATTEMPT", "visible_at": "2026-05-14T20:00:00Z"},
+          {"on": "2026-05-16", "qty": "10", "kind": "MISDELIVERY", "visible_at": "2026-05-16T20:00:00Z"},
+          {"on": "2026-05-18", "qty": "10", "kind": "POD", "visible_at": "2026-05-18T20:00:00Z"}
+        ]
+      },
+      {
+        "line_id": "SOL-4",
+        "item_id": "MM-440",
+        "geography_id": "GEO-NORTHEAST",
+        "timezone": "America/New_York",
+        "calendar": {"id": "CAL-WEEKDAY", "shutdowns": []},
+        "incoterm": "DAP",
+        "ordered_qty": "10",
+        "original_promise_on": "2026-05-18",
+        "revised_promise_on": "2026-05-28",
+        "rating": 5,
+        "events": [{"on": "2026-05-22", "qty": "10", "kind": "POD", "visible_at": "2026-05-22T20:00:00Z"}]
+      }
+    ],
+    "expected": {
+      "status": "COMPLETE",
+      "numerator": "1",
+      "denominator": "4",
+      "display": "0.2500",
+      "reasons": [],
+      "coverage": "1.000000",
+      "excluded_count": 0,
+      "affected_commitments": 3,
+      "affected_units": "30.000000",
+      "unresolved_records": 0
+    }
+  },
+  {
+    "id": "m2-incoterm-missing-alone",
+    "contract": "CONCORDIA_SIM_V1",
+    "metric_id": "OUTBOUND_CUSTOMER_OTD",
+    "as_of": ["2026-06-05T23:59:59Z"],
+    "period": ["2026-05-01", "2026-05-31"],
+    "scope": {},
+    "lines": [
+      {
+        "line_id": "SOL-NO-INCO",
+        "item_id": "MM-440",
+        "timezone": "America/New_York",
+        "calendar": {"id": "CAL-WEEKDAY", "shutdowns": []},
+        "ordered_qty": "10",
+        "original_promise_on": "2026-05-08",
+        "events": [{"on": "2026-05-07", "qty": "10", "kind": "POD", "visible_at": "2026-05-07T20:00:00Z"}]
+      }
+    ],
+    "expected": {
+      "status": "ABSTAIN",
+      "numerator": null,
+      "denominator": null,
+      "display": null,
+      "reasons": ["INCOTERM_MISSING"],
+      "coverage": null,
+      "excluded_count": 1,
+      "affected_commitments": 0,
+      "affected_units": "0.000000",
+      "unresolved_records": 1
+    }
+  },
+  {
+    "id": "m2-customer-hold",
+    "contract": "CONCORDIA_SIM_V1",
+    "metric_id": "OUTBOUND_CUSTOMER_OTD",
+    "as_of": ["2026-06-05T23:59:59Z"],
+    "period": ["2026-05-01", "2026-05-31"],
+    "scope": {},
+    "lines": [
+      {
+        "line_id": "SOL-HOLD",
+        "item_id": "MM-440",
+        "timezone": "America/New_York",
+        "calendar": {"id": "CAL-WEEKDAY", "shutdowns": []},
+        "incoterm": "DAP",
+        "ordered_qty": "10",
+        "original_promise_on": "2026-05-15",
+        "hold_start": "2026-05-01",
+        "hold_end": "2026-05-20",
+        "hold_recorded_on": "2026-05-01",
+        "events": []
+      }
+    ],
+    "expected": {
+      "status": "ZERO_DENOMINATOR",
+      "numerator": null,
+      "denominator": null,
+      "display": null,
+      "reasons": ["CUSTOMER_HOLD"],
+      "coverage": null,
+      "excluded_count": 1,
+      "affected_commitments": 0,
+      "affected_units": "0.000000",
+      "unresolved_records": 1
+    }
+  },
+  {
+    "id": "m3-hero",
+    "contract": "CONCORDIA_SIM_V1",
+    "metric_id": "UNIT_FILL_RATE",
+    "as_of": ["2026-06-05T23:59:59Z", "2026-07-15T23:59:59Z"],
+    "period": ["2026-05-01", "2026-05-31"],
+    "scope": {"item_id": "MM-440"},
+    "lines": [
+      {"line_id": "SOL-1", "item_id": "MM-440", "requested_ship_on": "2026-05-06", "ordered_qty": "10", "ship_confirmed_qty": "10", "ship_visible_at": "2026-05-07T20:00:00Z", "uom_resolved": true},
+      {"line_id": "SOL-2", "item_id": "MM-440", "requested_ship_on": "2026-05-08", "ordered_qty": "10", "ship_confirmed_qty": "10", "ship_visible_at": "2026-05-20T20:00:00Z", "uom_resolved": true},
+      {"line_id": "SOL-3", "item_id": "MM-440", "requested_ship_on": "2026-05-11", "ordered_qty": "10", "ship_confirmed_qty": "10", "ship_visible_at": "2026-05-18T20:00:00Z", "uom_resolved": true},
+      {"line_id": "SOL-4", "item_id": "MM-440", "requested_ship_on": "2026-05-13", "ordered_qty": "10", "ship_confirmed_qty": "10", "ship_visible_at": "2026-05-22T20:00:00Z", "uom_resolved": true}
+    ],
+    "expected": {
+      "status": "COMPLETE",
+      "numerator": "40.000000",
+      "denominator": "40.000000",
+      "display": "1.0000",
+      "reasons": [],
+      "coverage": "1.000000",
+      "excluded_count": 0,
+      "affected_commitments": 0,
+      "affected_units": "0.000000",
+      "unresolved_records": 0
+    }
+  },
+  {
+    "id": "m3-company-cancel",
+    "contract": "CONCORDIA_SIM_V1",
+    "metric_id": "UNIT_FILL_RATE",
+    "as_of": ["2026-06-05T23:59:59Z"],
+    "period": ["2026-05-01", "2026-05-31"],
+    "scope": {},
+    "lines": [
+      {"line_id": "SOL-CO", "item_id": "MM-440", "requested_ship_on": "2026-05-06", "ordered_qty": "10", "ship_confirmed_qty": "10", "ship_visible_at": "2026-05-07T20:00:00Z", "uom_resolved": true, "cancellation": "COMPANY"}
+    ],
+    "expected": {
+      "status": "COMPLETE",
+      "numerator": "0.000000",
+      "denominator": "10.000000",
+      "display": "0.0000",
+      "reasons": [],
+      "coverage": "1.000000",
+      "excluded_count": 0,
+      "affected_commitments": 1,
+      "affected_units": "10.000000",
+      "unresolved_records": 0
+    }
+  },
+  {
+    "id": "m3-customer-cancel",
+    "contract": "CONCORDIA_SIM_V1",
+    "metric_id": "UNIT_FILL_RATE",
+    "as_of": ["2026-06-05T23:59:59Z"],
+    "period": ["2026-05-01", "2026-05-31"],
+    "scope": {},
+    "lines": [
+      {"line_id": "SOL-CU", "item_id": "MM-440", "requested_ship_on": "2026-05-06", "ordered_qty": "10", "ship_confirmed_qty": "0", "ship_visible_at": "2026-05-07T20:00:00Z", "uom_resolved": true, "cancellation": "CUSTOMER_BEFORE_PICK"}
+    ],
+    "expected": {
+      "status": "ZERO_DENOMINATOR",
+      "numerator": null,
+      "denominator": null,
+      "display": null,
+      "reasons": ["CUSTOMER_CANCELLED"],
+      "coverage": null,
+      "excluded_count": 1,
+      "affected_commitments": 0,
+      "affected_units": "0.000000",
+      "unresolved_records": 1
+    }
+  },
+  {
+    "id": "m3-unresolved-uom",
+    "contract": "CONCORDIA_SIM_V1",
+    "metric_id": "UNIT_FILL_RATE",
+    "as_of": ["2026-06-05T23:59:59Z"],
+    "period": ["2026-05-01", "2026-05-31"],
+    "scope": {},
+    "lines": [
+      {"line_id": "SOL-UOM", "item_id": "MM-440", "requested_ship_on": "2026-05-06", "ordered_qty": null, "uom_resolved": false}
+    ],
+    "expected": {
+      "status": "ZERO_DENOMINATOR",
+      "numerator": null,
+      "denominator": null,
+      "display": null,
+      "reasons": ["UOM_UNRESOLVED"],
+      "coverage": null,
+      "excluded_count": 1,
+      "affected_commitments": 0,
+      "affected_units": "0.000000",
+      "unresolved_records": 1
+    }
+  },
+  {
+    "id": "m3-silent-substitute",
+    "contract": "CONCORDIA_SIM_V1",
+    "metric_id": "UNIT_FILL_RATE",
+    "as_of": ["2026-06-05T23:59:59Z"],
+    "period": ["2026-05-01", "2026-05-31"],
+    "scope": {},
+    "lines": [
+      {"line_id": "SOL-SUB", "item_id": "MM-440", "requested_ship_on": "2026-05-06", "ordered_qty": "10", "ship_confirmed_qty": "10", "ship_visible_at": "2026-05-07T20:00:00Z", "uom_resolved": true, "substitute": "SILENT"}
+    ],
+    "expected": {
+      "status": "COMPLETE",
+      "numerator": "0.000000",
+      "denominator": "10.000000",
+      "display": "0.0000",
+      "reasons": [],
+      "coverage": "1.000000",
+      "excluded_count": 0,
+      "affected_commitments": 1,
+      "affected_units": "10.000000",
+      "unresolved_records": 0
+    }
+  },
+  {
+    "id": "m3-overship",
+    "contract": "CONCORDIA_SIM_V1",
+    "metric_id": "UNIT_FILL_RATE",
+    "as_of": ["2026-06-05T23:59:59Z"],
+    "period": ["2026-05-01", "2026-05-31"],
+    "scope": {},
+    "lines": [
+      {"line_id": "SOL-OVER", "item_id": "MM-440", "requested_ship_on": "2026-05-06", "ordered_qty": "10", "ship_confirmed_qty": "14", "ship_visible_at": "2026-05-07T20:00:00Z", "uom_resolved": true}
+    ],
+    "expected": {
+      "status": "COMPLETE",
+      "numerator": "10.000000",
+      "denominator": "10.000000",
+      "display": "1.0000",
+      "reasons": [],
+      "coverage": "1.000000",
+      "excluded_count": 0,
+      "affected_commitments": 0,
+      "affected_units": "0.000000",
+      "unresolved_records": 0
+    }
+  },
+  {
+    "id": "m4-hero-early",
+    "contract": "CONCORDIA_SIM_V1",
+    "metric_id": "DAYS_INVENTORY",
+    "as_of": ["2026-06-05T23:59:59Z"],
+    "period": ["2026-05-01", "2026-05-31"],
+    "timezone": "America/New_York",
+    "scope": {"item_id": "MM-440", "facility_id": "FAC-DAYTON", "inventory_class": "FINISHED_GOODS"},
+    "snapshots": [
+      {"snapshot_id": "SNAP-EARLY", "item_id": "MM-440", "facility_id": "FAC-DAYTON", "inventory_class": "FINISHED_GOODS", "visible_at": "2026-06-05T12:00:00Z", "on_hand": "140", "quality_hold": "0", "allocated": "0", "in_transit": "20", "erp_book": "999"}
+    ],
+    "demand_ranges": [
+      {"start": "2026-05-08", "end": "2026-06-04", "qty": "5", "item_id": "MM-440", "facility_id": "FAC-DAYTON", "inventory_class": "FINISHED_GOODS"}
+    ],
+    "expected": {
+      "status": "COMPLETE",
+      "numerator": "3920.000000",
+      "denominator": "140.000000",
+      "display": "28.0000",
+      "reasons": [],
+      "coverage": "1.000000",
+      "excluded_count": 0,
+      "affected_commitments": 0,
+      "affected_units": "0.000000",
+      "unresolved_records": 0
+    }
+  },
+  {
+    "id": "m4-hero-final",
+    "contract": "CONCORDIA_SIM_V1",
+    "metric_id": "DAYS_INVENTORY",
+    "as_of": ["2026-07-15T23:59:59Z"],
+    "period": ["2026-05-01", "2026-05-31"],
+    "timezone": "America/New_York",
+    "scope": {"item_id": "MM-440", "facility_id": "FAC-DAYTON", "inventory_class": "FINISHED_GOODS"},
+    "snapshots": [
+      {"snapshot_id": "SNAP-FINAL", "item_id": "MM-440", "facility_id": "FAC-DAYTON", "inventory_class": "FINISHED_GOODS", "visible_at": "2026-07-15T12:00:00Z", "on_hand": "70", "quality_hold": "0", "allocated": "0", "in_transit": "10", "erp_book": "50"}
+    ],
+    "demand_ranges": [
+      {"start": "2026-06-17", "end": "2026-07-14", "qty": "5", "item_id": "MM-440", "facility_id": "FAC-DAYTON", "inventory_class": "FINISHED_GOODS"}
+    ],
+    "expected": {
+      "status": "COMPLETE",
+      "numerator": "1960.000000",
+      "denominator": "140.000000",
+      "display": "14.0000",
+      "reasons": [],
+      "coverage": "1.000000",
+      "excluded_count": 0,
+      "affected_commitments": 0,
+      "affected_units": "0.000000",
+      "unresolved_records": 0
+    }
+  },
+  {
+    "id": "m4-zero-demand",
+    "contract": "CONCORDIA_SIM_V1",
+    "metric_id": "DAYS_INVENTORY",
+    "as_of": ["2026-06-05T23:59:59Z"],
+    "period": ["2026-05-01", "2026-05-31"],
+    "timezone": "America/New_York",
+    "scope": {"item_id": "MM-440", "facility_id": "FAC-DAYTON", "inventory_class": "FINISHED_GOODS"},
+    "snapshots": [
+      {"snapshot_id": "SNAP-ZERO", "item_id": "MM-440", "facility_id": "FAC-DAYTON", "inventory_class": "FINISHED_GOODS", "visible_at": "2026-06-05T12:00:00Z", "on_hand": "10", "quality_hold": "0", "allocated": "0", "in_transit": "5", "erp_book": "1"}
+    ],
+    "demand": [],
+    "expected": {
+      "status": "ZERO_DEMAND",
+      "numerator": null,
+      "denominator": null,
+      "display": null,
+      "reasons": ["ZERO_DEMAND"],
+      "coverage": null,
+      "excluded_count": 0,
+      "affected_commitments": 0,
+      "affected_units": "0.000000",
+      "unresolved_records": 0
+    }
+  },
+  {
+    "id": "m4-missing-facility",
+    "contract": "CONCORDIA_SIM_V1",
+    "metric_id": "DAYS_INVENTORY",
+    "as_of": ["2026-06-05T23:59:59Z"],
+    "period": ["2026-05-01", "2026-05-31"],
+    "timezone": "America/New_York",
+    "scope": {"item_id": "MM-440", "inventory_class": "FINISHED_GOODS"},
+    "snapshots": [],
+    "demand": [],
+    "expected": {
+      "status": "CLARIFY",
+      "numerator": null,
+      "denominator": null,
+      "display": null,
+      "reasons": ["FACILITY_SCOPE_MISSING"],
+      "coverage": null,
+      "excluded_count": 0,
+      "affected_commitments": 0,
+      "affected_units": "0.000000",
+      "unresolved_records": 0
+    }
+  },
+  {
+    "id": "m4-network",
+    "contract": "CONCORDIA_SIM_V1",
+    "metric_id": "DAYS_INVENTORY",
+    "as_of": ["2026-06-05T23:59:59Z"],
+    "period": ["2026-05-01", "2026-05-31"],
+    "timezone": "America/New_York",
+    "scope": {"item_id": "MM-440", "inventory_class": "FINISHED_GOODS", "network": true},
+    "snapshots": [
+      {"snapshot_id": "SNAP-DAY", "item_id": "MM-440", "facility_id": "FAC-DAYTON", "inventory_class": "FINISHED_GOODS", "visible_at": "2026-06-05T12:00:00Z", "on_hand": "100", "quality_hold": "0", "allocated": "0", "in_transit": "0", "erp_book": "0"},
+      {"snapshot_id": "SNAP-REN", "item_id": "MM-440", "facility_id": "FAC-RENO", "inventory_class": "FINISHED_GOODS", "visible_at": "2026-06-05T12:00:00Z", "on_hand": "100", "quality_hold": "0", "allocated": "0", "in_transit": "0", "erp_book": "0"}
+    ],
+    "demand": [
+      {"on": "2026-05-20", "qty": "50", "item_id": "MM-440", "facility_id": "FAC-DAYTON", "inventory_class": "FINISHED_GOODS"},
+      {"on": "2026-05-20", "qty": "200", "item_id": "MM-440", "facility_id": "FAC-RENO", "inventory_class": "FINISHED_GOODS"}
+    ],
+    "expected": {
+      "status": "COMPLETE",
+      "numerator": "5600.000000",
+      "denominator": "250.000000",
+      "display": "22.4000",
+      "reasons": [],
+      "coverage": "1.000000",
+      "excluded_count": 0,
+      "affected_commitments": 0,
+      "affected_units": "0.000000",
+      "unresolved_records": 0
+    }
+  },
+  {
+    "id": "m5-hero-early",
+    "contract": "CONCORDIA_SIM_V1",
+    "metric_id": "LANDED_COST_PER_ACCEPTED_UNIT",
+    "as_of": ["2026-06-05T23:59:59Z"],
+    "period": ["2026-05-01", "2026-05-31"],
+    "scope": {"item_id": "MM-440", "facility_id": "FAC-DAYTON"},
+    "receipts": [
+      {
+        "receipt_id": "RCPT-HERO",
+        "item_id": "MM-440",
+        "facility_id": "FAC-DAYTON",
+        "accepted_qty": "100",
+        "accepted_on": "2026-05-12",
+        "incoterm": "EXW",
+        "origin_country": "US",
+        "dest_country": "US",
+        "calendar_id": "CAL-WEEKDAY",
+        "components": [
+          {"kind": "MERCHANDISE", "obligation_visible_at": "2026-05-12T00:00:00Z", "amount_minor": 100000, "amount_visible_at": "2026-05-12T00:00:00Z", "invoice_date": "2026-05-12", "currency": "USD", "fx_rate": "1", "fx_visible_at": "2026-05-12T00:00:00Z"},
+          {"kind": "FREIGHT", "obligation_visible_at": "2026-05-20T00:00:00Z", "amount_minor": 20000, "amount_visible_at": "2026-06-20T00:00:00Z", "economic_date": "2026-06-18", "currency": "USD", "fx_rate": "1", "fx_visible_at": "2026-05-20T00:00:00Z", "chargeable_weight": "10", "allocation_pool_id": "FR-HERO"},
+          {"kind": "BROKERAGE", "obligation_visible_at": "2026-05-20T00:00:00Z", "amount_minor": 5000, "amount_visible_at": "2026-06-20T00:00:00Z", "economic_date": "2026-06-18", "currency": "USD", "fx_rate": "1", "fx_visible_at": "2026-05-20T00:00:00Z", "customs_value_minor": 100000}
+        ]
+      }
+    ],
+    "expected": {
+      "status": "INCOMPLETE",
+      "numerator": null,
+      "denominator": null,
+      "display": null,
+      "diagnostic_display": null,
+      "reasons": ["BROKERAGE_AMOUNT_MISSING", "FREIGHT_AMOUNT_MISSING"],
+      "coverage": "0.000000",
+      "excluded_count": 1,
+      "affected_commitments": 0,
+      "affected_units": "0.000000",
+      "unresolved_records": 1
+    }
+  },
+  {
+    "id": "m5-hero-final",
+    "contract": "CONCORDIA_SIM_V1",
+    "metric_id": "LANDED_COST_PER_ACCEPTED_UNIT",
+    "as_of": ["2026-07-15T23:59:59Z"],
+    "period": ["2026-05-01", "2026-05-31"],
+    "scope": {"item_id": "MM-440", "facility_id": "FAC-DAYTON"},
+    "receipts": [
+      {
+        "receipt_id": "RCPT-HERO",
+        "item_id": "MM-440",
+        "facility_id": "FAC-DAYTON",
+        "accepted_qty": "100",
+        "accepted_on": "2026-05-12",
+        "incoterm": "EXW",
+        "origin_country": "US",
+        "dest_country": "US",
+        "calendar_id": "CAL-WEEKDAY",
+        "components": [
+          {"kind": "MERCHANDISE", "obligation_visible_at": "2026-05-12T00:00:00Z", "amount_minor": 100000, "amount_visible_at": "2026-05-12T00:00:00Z", "invoice_date": "2026-05-12", "currency": "USD", "fx_rate": "1", "fx_visible_at": "2026-05-12T00:00:00Z"},
+          {"kind": "FREIGHT", "obligation_visible_at": "2026-05-20T00:00:00Z", "amount_minor": 20000, "amount_visible_at": "2026-06-20T00:00:00Z", "economic_date": "2026-06-18", "currency": "USD", "fx_rate": "1", "fx_visible_at": "2026-05-20T00:00:00Z", "chargeable_weight": "10", "allocation_pool_id": "FR-HERO"},
+          {"kind": "BROKERAGE", "obligation_visible_at": "2026-05-20T00:00:00Z", "amount_minor": 5000, "amount_visible_at": "2026-06-20T00:00:00Z", "economic_date": "2026-06-18", "currency": "USD", "fx_rate": "1", "fx_visible_at": "2026-05-20T00:00:00Z", "customs_value_minor": 100000}
+        ]
+      }
+    ],
+    "expected": {
+      "status": "COMPLETE",
+      "numerator": "125000",
+      "denominator": "100.000000",
+      "display": "12.5000",
+      "reasons": [],
+      "coverage": "1.000000",
+      "excluded_count": 0,
+      "affected_commitments": 0,
+      "affected_units": "0.000000",
+      "unresolved_records": 0
+    }
+  },
+  {
+    "id": "m5-missing-duty",
+    "contract": "CONCORDIA_SIM_V1",
+    "metric_id": "LANDED_COST_PER_ACCEPTED_UNIT",
+    "as_of": ["2026-07-15T23:59:59Z"],
+    "period": ["2026-05-01", "2026-05-31"],
+    "scope": {"item_id": "MM-440"},
+    "receipts": [
+      {
+        "receipt_id": "RCPT-DUTY",
+        "item_id": "MM-440",
+        "facility_id": "FAC-STUTTGART",
+        "accepted_qty": "10",
+        "accepted_on": "2026-05-10",
+        "incoterm": "EXW",
+        "origin_country": "US",
+        "dest_country": "DE",
+        "calendar_id": "CAL-WEEKDAY",
+        "components": [
+          {"kind": "MERCHANDISE", "obligation_visible_at": "2026-05-10T00:00:00Z", "amount_minor": 10000, "amount_visible_at": "2026-05-10T00:00:00Z", "invoice_date": "2026-05-10", "currency": "USD", "fx_rate": "1", "fx_visible_at": "2026-05-10T00:00:00Z"},
+          {"kind": "FREIGHT", "obligation_visible_at": "2026-05-10T00:00:00Z", "amount_minor": 1000, "amount_visible_at": "2026-05-10T00:00:00Z", "economic_date": "2026-05-10", "currency": "USD", "fx_rate": "1", "fx_visible_at": "2026-05-10T00:00:00Z", "chargeable_weight": "4"}
+        ]
+      }
+    ],
+    "expected": {
+      "status": "INCOMPLETE",
+      "numerator": null,
+      "denominator": null,
+      "display": null,
+      "reasons": ["DUTY_AMOUNT_MISSING"],
+      "coverage": "0.000000",
+      "excluded_count": 1,
+      "affected_commitments": 0,
+      "affected_units": "0.000000",
+      "unresolved_records": 1
+    }
+  },
+  {
+    "id": "m5-duty-zero",
+    "contract": "CONCORDIA_SIM_V1",
+    "metric_id": "LANDED_COST_PER_ACCEPTED_UNIT",
+    "as_of": ["2026-07-15T23:59:59Z"],
+    "period": ["2026-05-01", "2026-05-31"],
+    "scope": {"item_id": "MM-440"},
+    "receipts": [
+      {
+        "receipt_id": "RCPT-DUTY0",
+        "item_id": "MM-440",
+        "facility_id": "FAC-STUTTGART",
+        "accepted_qty": "10",
+        "accepted_on": "2026-05-10",
+        "incoterm": "EXW",
+        "origin_country": "US",
+        "dest_country": "DE",
+        "calendar_id": "CAL-WEEKDAY",
+        "components": [
+          {"kind": "MERCHANDISE", "obligation_visible_at": "2026-05-10T00:00:00Z", "amount_minor": 10000, "amount_visible_at": "2026-05-10T00:00:00Z", "invoice_date": "2026-05-10", "currency": "USD", "fx_rate": "1", "fx_visible_at": "2026-05-10T00:00:00Z"},
+          {"kind": "FREIGHT", "obligation_visible_at": "2026-05-10T00:00:00Z", "amount_minor": 1000, "amount_visible_at": "2026-05-10T00:00:00Z", "economic_date": "2026-05-10", "currency": "USD", "fx_rate": "1", "fx_visible_at": "2026-05-10T00:00:00Z", "chargeable_weight": "4"},
+          {"kind": "DUTY", "obligation_visible_at": "2026-05-10T00:00:00Z", "amount_minor": 0, "amount_visible_at": "2026-05-10T00:00:00Z", "economic_date": "2026-05-10", "currency": "USD", "fx_rate": "1", "fx_visible_at": "2026-05-10T00:00:00Z", "customs_value_minor": 10000}
+        ]
+      }
+    ],
+    "expected": {
+      "status": "COMPLETE",
+      "numerator": "11000",
+      "denominator": "10.000000",
+      "display": "11.0000",
+      "reasons": [],
+      "coverage": "1.000000",
+      "excluded_count": 0,
+      "affected_commitments": 0,
+      "affected_units": "0.000000",
+      "unresolved_records": 0
+    }
+  },
+  {
+    "id": "m5-dap-no-freight",
+    "contract": "CONCORDIA_SIM_V1",
+    "metric_id": "LANDED_COST_PER_ACCEPTED_UNIT",
+    "as_of": ["2026-07-15T23:59:59Z"],
+    "period": ["2026-05-01", "2026-05-31"],
+    "scope": {},
+    "receipts": [
+      {
+        "receipt_id": "RCPT-DAP",
+        "item_id": "MM-440",
+        "facility_id": "FAC-DAYTON",
+        "accepted_qty": "10",
+        "accepted_on": "2026-05-10",
+        "incoterm": "DAP",
+        "origin_country": "US",
+        "dest_country": "US",
+        "calendar_id": "CAL-WEEKDAY",
+        "components": [
+          {"kind": "MERCHANDISE", "obligation_visible_at": "2026-05-10T00:00:00Z", "amount_minor": 10000, "amount_visible_at": "2026-05-10T00:00:00Z", "invoice_date": "2026-05-10", "currency": "USD", "fx_rate": "1", "fx_visible_at": "2026-05-10T00:00:00Z"}
+        ]
+      }
+    ],
+    "expected": {
+      "status": "COMPLETE",
+      "numerator": "10000",
+      "denominator": "10.000000",
+      "display": "10.0000",
+      "reasons": [],
+      "coverage": "1.000000",
+      "excluded_count": 0,
+      "affected_commitments": 0,
+      "affected_units": "0.000000",
+      "unresolved_records": 0
+    }
+  },
+  {
+    "id": "m5-fx-half-even",
+    "contract": "CONCORDIA_SIM_V1",
+    "metric_id": "LANDED_COST_PER_ACCEPTED_UNIT",
+    "as_of": ["2026-07-15T23:59:59Z"],
+    "period": ["2026-05-01", "2026-05-31"],
+    "scope": {},
+    "receipts": [
+      {
+        "receipt_id": "RCPT-FX",
+        "item_id": "MM-440",
+        "facility_id": "FAC-DAYTON",
+        "accepted_qty": "1",
+        "accepted_on": "2026-05-10",
+        "incoterm": "DAP",
+        "origin_country": "US",
+        "dest_country": "US",
+        "calendar_id": "CAL-WEEKDAY",
+        "components": [
+          {"kind": "MERCHANDISE", "obligation_visible_at": "2026-05-10T00:00:00Z", "amount_minor": 5, "amount_visible_at": "2026-05-10T00:00:00Z", "invoice_date": "2026-05-10", "currency": "EUR", "fx_rate": "1.1", "fx_visible_at": "2026-05-10T00:00:00Z"}
+        ]
+      }
+    ],
+    "expected": {
+      "status": "COMPLETE",
+      "numerator": "6",
+      "denominator": "1.000000",
+      "display": "0.0600",
+      "reasons": [],
+      "coverage": "1.000000",
+      "excluded_count": 0,
+      "affected_commitments": 0,
+      "affected_units": "0.000000",
+      "unresolved_records": 0
+    }
+  },
+  {
+    "id": "m5-credit",
+    "contract": "CONCORDIA_SIM_V1",
+    "metric_id": "LANDED_COST_PER_ACCEPTED_UNIT",
+    "as_of": ["2026-07-15T23:59:59Z"],
+    "period": ["2026-05-01", "2026-05-31"],
+    "scope": {},
+    "receipts": [
+      {
+        "receipt_id": "RCPT-CR",
+        "item_id": "MM-440",
+        "facility_id": "FAC-DAYTON",
+        "accepted_qty": "10",
+        "accepted_on": "2026-05-10",
+        "incoterm": "DAP",
+        "origin_country": "US",
+        "dest_country": "US",
+        "calendar_id": "CAL-WEEKDAY",
+        "components": [
+          {"kind": "MERCHANDISE", "obligation_visible_at": "2026-05-10T00:00:00Z", "amount_minor": 10000, "amount_visible_at": "2026-05-10T00:00:00Z", "invoice_date": "2026-05-10", "currency": "USD", "fx_rate": "1", "fx_visible_at": "2026-05-10T00:00:00Z"},
+          {"kind": "CREDIT", "obligation_visible_at": "2026-05-11T00:00:00Z", "amount_minor": 1000, "amount_visible_at": "2026-05-11T00:00:00Z", "economic_date": "2026-05-11", "currency": "USD", "fx_rate": "1", "fx_visible_at": "2026-05-11T00:00:00Z"}
+        ]
+      }
+    ],
+    "expected": {
+      "status": "COMPLETE",
+      "numerator": "9000",
+      "denominator": "10.000000",
+      "display": "9.0000",
+      "reasons": [],
+      "coverage": "1.000000",
+      "excluded_count": 0,
+      "affected_commitments": 0,
+      "affected_units": "0.000000",
+      "unresolved_records": 0
+    }
+  },
+  {
+    "id": "m5-credit-missing",
+    "contract": "CONCORDIA_SIM_V1",
+    "metric_id": "LANDED_COST_PER_ACCEPTED_UNIT",
+    "as_of": ["2026-07-15T23:59:59Z"],
+    "period": ["2026-05-01", "2026-05-31"],
+    "scope": {},
+    "receipts": [
+      {
+        "receipt_id": "RCPT-CR0",
+        "item_id": "MM-440",
+        "facility_id": "FAC-DAYTON",
+        "accepted_qty": "10",
+        "accepted_on": "2026-05-10",
+        "incoterm": "DAP",
+        "origin_country": "US",
+        "dest_country": "US",
+        "calendar_id": "CAL-WEEKDAY",
+        "components": [
+          {"kind": "MERCHANDISE", "obligation_visible_at": "2026-05-10T00:00:00Z", "amount_minor": 10000, "amount_visible_at": "2026-05-10T00:00:00Z", "invoice_date": "2026-05-10", "currency": "USD", "fx_rate": "1", "fx_visible_at": "2026-05-10T00:00:00Z"},
+          {"kind": "CREDIT", "obligation_visible_at": "2026-05-11T00:00:00Z", "amount_minor": null, "amount_visible_at": null, "economic_date": null, "currency": "USD", "fx_rate": null, "fx_visible_at": null}
+        ]
+      }
+    ],
+    "expected": {
+      "status": "INCOMPLETE",
+      "numerator": null,
+      "denominator": null,
+      "display": null,
+      "reasons": ["CREDIT_AMOUNT_MISSING"],
+      "coverage": "0.000000",
+      "excluded_count": 1,
+      "affected_commitments": 0,
+      "affected_units": "0.000000",
+      "unresolved_records": 1
+    }
+  },
+  {
+    "id": "m5-freight-split",
+    "contract": "CONCORDIA_SIM_V1",
+    "metric_id": "LANDED_COST_PER_ACCEPTED_UNIT",
+    "as_of": ["2026-07-15T23:59:59Z"],
+    "period": ["2026-05-01", "2026-05-31"],
+    "scope": {"item_id": "MM-440"},
+    "receipts": [
+      {
+        "receipt_id": "RCPT-A",
+        "item_id": "MM-440",
+        "facility_id": "FAC-DAYTON",
+        "accepted_qty": "1",
+        "accepted_on": "2026-05-10",
+        "incoterm": "EXW",
+        "origin_country": "US",
+        "dest_country": "US",
+        "calendar_id": "CAL-WEEKDAY",
+        "components": [
+          {"kind": "MERCHANDISE", "obligation_visible_at": "2026-05-10T00:00:00Z", "amount_minor": 10000, "amount_visible_at": "2026-05-10T00:00:00Z", "invoice_date": "2026-05-10", "currency": "USD", "fx_rate": "1", "fx_visible_at": "2026-05-10T00:00:00Z"},
+          {"kind": "FREIGHT", "obligation_visible_at": "2026-05-10T00:00:00Z", "amount_minor": 8000, "amount_visible_at": "2026-05-10T00:00:00Z", "economic_date": "2026-05-10", "currency": "USD", "fx_rate": "1", "fx_visible_at": "2026-05-10T00:00:00Z", "chargeable_weight": "1", "allocation_pool_id": "FR-SPLIT"}
+        ]
+      },
+      {
+        "receipt_id": "RCPT-B",
+        "item_id": "MM-441",
+        "facility_id": "FAC-DAYTON",
+        "accepted_qty": "1",
+        "accepted_on": "2026-05-10",
+        "incoterm": "EXW",
+        "origin_country": "US",
+        "dest_country": "US",
+        "calendar_id": "CAL-WEEKDAY",
+        "components": [
+          {"kind": "MERCHANDISE", "obligation_visible_at": "2026-05-10T00:00:00Z", "amount_minor": 10000, "amount_visible_at": "2026-05-10T00:00:00Z", "invoice_date": "2026-05-10", "currency": "USD", "fx_rate": "1", "fx_visible_at": "2026-05-10T00:00:00Z"},
+          {"kind": "FREIGHT", "obligation_visible_at": "2026-05-10T00:00:00Z", "amount_minor": 8000, "amount_visible_at": "2026-05-10T00:00:00Z", "economic_date": "2026-05-10", "currency": "USD", "fx_rate": "1", "fx_visible_at": "2026-05-10T00:00:00Z", "chargeable_weight": "3", "allocation_pool_id": "FR-SPLIT"}
+        ]
+      }
+    ],
+    "expected": {
+      "status": "COMPLETE",
+      "numerator": "12000",
+      "denominator": "1.000000",
+      "display": "120.0000",
+      "reasons": [],
+      "coverage": "1.000000",
+      "excluded_count": 0,
+      "affected_commitments": 0,
+      "affected_units": "0.000000",
+      "unresolved_records": 0
+    }
+  },
+  {
+    "id": "m5-partial-coverage",
+    "contract": "CONCORDIA_SIM_V1",
+    "metric_id": "LANDED_COST_PER_ACCEPTED_UNIT",
+    "as_of": ["2026-07-15T23:59:59Z"],
+    "period": ["2026-05-01", "2026-05-31"],
+    "scope": {"item_id": "MM-440"},
+    "receipts": [
+      {
+        "receipt_id": "RCPT-COVERED",
+        "item_id": "MM-440",
+        "facility_id": "FAC-DAYTON",
+        "accepted_qty": "10",
+        "accepted_on": "2026-05-10",
+        "incoterm": "DAP",
+        "origin_country": "US",
+        "dest_country": "US",
+        "calendar_id": "CAL-WEEKDAY",
+        "components": [
+          {"kind": "MERCHANDISE", "obligation_visible_at": "2026-05-10T00:00:00Z", "amount_minor": 10000, "amount_visible_at": "2026-05-10T00:00:00Z", "invoice_date": "2026-05-10", "currency": "USD", "fx_rate": "1", "fx_visible_at": "2026-05-10T00:00:00Z"}
+        ]
+      },
+      {
+        "receipt_id": "RCPT-OPEN",
+        "item_id": "MM-440",
+        "facility_id": "FAC-DAYTON",
+        "accepted_qty": "10",
+        "accepted_on": "2026-05-11",
+        "incoterm": "EXW",
+        "origin_country": "US",
+        "dest_country": "US",
+        "calendar_id": "CAL-WEEKDAY",
+        "components": [
+          {"kind": "MERCHANDISE", "obligation_visible_at": "2026-05-11T00:00:00Z", "amount_minor": 10000, "amount_visible_at": "2026-05-11T00:00:00Z", "invoice_date": "2026-05-11", "currency": "USD", "fx_rate": "1", "fx_visible_at": "2026-05-11T00:00:00Z"}
+        ]
+      }
+    ],
+    "expected": {
+      "status": "INCOMPLETE",
+      "numerator": null,
+      "denominator": null,
+      "display": null,
+      "diagnostic_display": "10.0000",
+      "reasons": ["FREIGHT_AMOUNT_MISSING"],
+      "coverage": "0.500000",
+      "excluded_count": 1,
+      "affected_commitments": 0,
+      "affected_units": "0.000000",
+      "unresolved_records": 1
+    }
+  }
+]

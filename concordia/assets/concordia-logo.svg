@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 340" role="img" aria-labelledby="title desc">
+  <title id="title">Concordia primary logo</title>
+  <desc id="desc">Concordia logo showing three enterprise pathways resolving into a governed truth aperture.</desc>
+  <!-- Transparent background. -->
+  <g transform="translate(43 48)" fill="none" stroke-linecap="square" stroke-linejoin="miter">
+    <path d="M122 16V82L89 115" stroke="#1746A2" stroke-width="20"/>
+    <path d="M18 198L73 166L90 149" stroke="#00A6A6" stroke-width="20"/>
+    <path d="M226 198L171 166L154 149" stroke="#2F6FED" stroke-width="20"/>
+    <path d="M122 97L159 134L122 171L85 134Z" fill="#FFFFFF" stroke="#102A43" stroke-width="8"/>
+    <path d="M122 109L147 134L122 159L97 134Z" stroke="#18B8AE" stroke-width="4"/>
+    <circle cx="122" cy="134" r="7" fill="#102A43" stroke="none"/>
+    <path d="M159 134H238" stroke="#102A43" stroke-width="9"/>
+    <circle cx="238" cy="134" r="8" fill="#102A43"/>
+  </g>
+  <g transform="translate(340 102)">
+    <text x="0" y="77" fill="#102A43" font-family="Arial, Helvetica, sans-serif" font-size="94" font-weight="700" letter-spacing="4">CONCORDIA</text>
+    <path d="M4 104H887" stroke="#D4DEE8" stroke-width="2"/>
+    <path d="M4 104H172" stroke="#18B8AE" stroke-width="5"/>
+    <text x="5" y="137" fill="#516D83" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700" letter-spacing="3">GOVERNED SUPPLY CHAIN INTELLIGENCE</text>
+  </g>
+</svg>

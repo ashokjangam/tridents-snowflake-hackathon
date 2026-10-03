@@ -1,0 +1,16 @@
+{
+  "_source": "Deployed CONCORDIA account after batch 2 (publish run recency 1) and data/generated/verification.json, 2026-10-02.",
+  "raw_records": "126,073",
+  "quarantined": "111",
+  "result_rows": "43,948",
+  "as_of_points": "19",
+  "golden": "35/35",
+  "grid": "103/103",
+  "hero": "8/8",
+  "security": "14/14",
+  "m1": "2/3 · 66.7%",
+  "m2": "1/4 · 25.0%",
+  "m3": "40/40 · 100%",
+  "m5_early": "INCOMPLETE",
+  "m5_final": "$12.50 per unit"
+}

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 340" role="img" aria-labelledby="title desc">
+  <title id="title">Concordia reversed logo</title>
+  <desc id="desc">Transparent-background reversed Concordia logo for use on deep surfaces.</desc>
+  <!-- No background rectangle: place this white version on any deep surface. -->
+  <g transform="translate(43 48)" fill="none" stroke-linecap="square" stroke-linejoin="miter">
+    <path d="M122 16V82L89 115" stroke="#8EB1FF" stroke-width="20"/>
+    <path d="M18 198L73 166L90 149" stroke="#55D7CF" stroke-width="20"/>
+    <path d="M226 198L171 166L154 149" stroke="#B0C8FF" stroke-width="20"/>
+    <path d="M122 97L159 134L122 171L85 134Z" fill="none" stroke="#F4F8FC" stroke-width="8"/>
+    <path d="M122 109L147 134L122 159L97 134Z" stroke="#55D7CF" stroke-width="4"/>
+    <circle cx="122" cy="134" r="7" fill="#F4F8FC" stroke="none"/>
+    <path d="M159 134H238" stroke="#F4F8FC" stroke-width="9"/>
+    <circle cx="238" cy="134" r="8" fill="#F4F8FC"/>
+  </g>
+  <g transform="translate(340 102)">
+    <text x="0" y="77" fill="#F4F8FC" font-family="Arial, Helvetica, sans-serif" font-size="94" font-weight="700" letter-spacing="4">CONCORDIA</text>
+    <path d="M4 104H887" stroke="#829BB2" stroke-width="2" opacity=".55"/>
+    <path d="M4 104H172" stroke="#55D7CF" stroke-width="5"/>
+    <text x="5" y="137" fill="#D6E3ED" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700" letter-spacing="3">GOVERNED SUPPLY CHAIN INTELLIGENCE</text>
+  </g>
+</svg>

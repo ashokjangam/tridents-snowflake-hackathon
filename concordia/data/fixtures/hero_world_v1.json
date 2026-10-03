@@ -1,0 +1,23 @@
+{
+  "contract": "CONCORDIA_SIM_V1",
+  "world_id": "MERIDIAN",
+  "note": "Expected in-world hero results for May 2026. Synthetic. M4 is computed from the simulated world and is not pinned here.",
+  "period": ["2026-05-01", "2026-05-31"],
+  "checks": [
+    {"metric_id": "INBOUND_SUPPLIER_OTD", "scope": {"item_id": "MM-440", "facility_id": "FAC-DAYTON"},
+     "as_of": ["2026-06-05T23:59:59Z", "2026-07-15T23:59:59Z"],
+     "expected": {"status": "COMPLETE", "numerator": "2", "denominator": "3", "display": "0.6667", "affected_commitments": 1}},
+    {"metric_id": "OUTBOUND_CUSTOMER_OTD", "scope": {"item_id": "MM-440", "geography_id": "GEO-NORTHEAST"},
+     "as_of": ["2026-06-05T23:59:59Z", "2026-07-15T23:59:59Z"],
+     "expected": {"status": "COMPLETE", "numerator": "1", "denominator": "4", "display": "0.2500", "affected_commitments": 3, "affected_units": "30.000000"}},
+    {"metric_id": "UNIT_FILL_RATE", "scope": {"item_id": "MM-440"},
+     "as_of": ["2026-06-05T23:59:59Z", "2026-07-15T23:59:59Z"],
+     "expected": {"status": "COMPLETE", "numerator": "40.000000", "denominator": "40.000000", "display": "1.0000"}},
+    {"metric_id": "LANDED_COST_PER_ACCEPTED_UNIT", "scope": {"item_id": "MM-440", "facility_id": "FAC-DAYTON"},
+     "as_of": ["2026-06-05T23:59:59Z"],
+     "expected": {"status": "INCOMPLETE", "display": null, "coverage": "0.000000", "reasons": ["BROKERAGE_AMOUNT_MISSING", "FREIGHT_AMOUNT_MISSING"]}},
+    {"metric_id": "LANDED_COST_PER_ACCEPTED_UNIT", "scope": {"item_id": "MM-440", "facility_id": "FAC-DAYTON"},
+     "as_of": ["2026-07-15T23:59:59Z"], "after_batch": 2,
+     "expected": {"status": "COMPLETE", "numerator": "237500", "denominator": "190.000000", "display": "12.5000", "coverage": "1.000000"}}
+  ]
+}

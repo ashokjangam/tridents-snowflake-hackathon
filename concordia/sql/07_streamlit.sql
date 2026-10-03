@@ -1,0 +1,19 @@
+-- Streamlit in Snowflake. Owned by CONCORDIA_APP_OWNER (never ACCOUNTADMIN), runs on CONCORDIA_APP_WH.
+-- The owner role can read APP secure views and call APP persona functions and procedures only.
+
+USE ROLE CONCORDIA_APP_OWNER;
+USE SECONDARY ROLES NONE;
+USE WAREHOUSE CONCORDIA_APP_WH;
+USE DATABASE CONCORDIA;
+USE SCHEMA APP;
+
+CREATE STAGE IF NOT EXISTS APP.STREAMLIT_STAGE DIRECTORY = (ENABLE = TRUE) COMMENT = 'Concordia Streamlit source';
+
+CREATE STREAMLIT IF NOT EXISTS APP.CONCORDIA
+  ROOT_LOCATION = '@CONCORDIA.APP.STREAMLIT_STAGE'
+  MAIN_FILE = 'app.py'
+  QUERY_WAREHOUSE = CONCORDIA_APP_WH
+  TITLE = 'Concordia'
+  COMMENT = 'Different Teams. Same Truth. Governed supply chain intelligence on synthetic data.';
+
+GRANT USAGE ON STREAMLIT APP.CONCORDIA TO ROLE CONCORDIA_APP;

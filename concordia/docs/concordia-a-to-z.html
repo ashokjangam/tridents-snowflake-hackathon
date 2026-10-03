@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Concordia — the A to Z guide</title>
+<style>
+  :root{
+    --bg:#F5F7FA; --panel:#FFFFFF; --panel2:#EEF2F7; --line:#D4DEE8; --text:#102A43; --muted:#516D83;
+    --navy:#102A43; --blue:#1746A2; --teal:#0E9F9A; --amber:#B7791F; --red:#B42318; --violet:#6D4BC4;
+    --mono:'Cascadia Code','Consolas','SFMono-Regular',monospace;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 'Segoe UI',system-ui,-apple-system,sans-serif}
+  a{color:var(--blue)}
+  code{font-family:var(--mono);background:#E8EEF5;padding:1px 5px;border-radius:4px;font-size:.86em;color:#0B2A55}
+  pre{font-family:var(--mono);background:#0F1E2E;color:#DCE8F5;border-radius:8px;padding:12px 14px;overflow:auto;font-size:12.5px;line-height:1.5}
+  .layout{display:grid;grid-template-columns:270px 1fr;min-height:100vh}
+  nav{position:sticky;top:0;height:100vh;overflow:auto;background:#FFFFFF;border-right:1px solid var(--line);padding:20px 14px}
+  nav .brand{font-weight:800;letter-spacing:.06em;font-size:14px;color:var(--blue);text-transform:uppercase}
+  nav .sub{color:var(--muted);font-size:12px;margin-bottom:14px}
+  nav a{display:block;color:var(--muted);text-decoration:none;font-size:13px;padding:4px 8px;border-radius:6px}
+  nav a:hover{background:var(--panel2);color:var(--text)}
+  nav .grp{margin:14px 0 4px 8px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#8CA0B3}
+  main{padding:30px 46px 90px;max-width:1240px}
+  h1{font-size:31px;margin:0 0 6px}
+  h2{font-size:23px;margin:0 0 6px;border-bottom:1px solid var(--line);padding-bottom:8px}
+  h3{font-size:17.5px;margin:24px 0 8px}
+  h4{margin:14px 0 6px;font-size:14.5px}
+  p{margin:8px 0}
+  .lede{color:var(--muted);font-size:16px;max-width:920px}
+  section{padding:34px 0 8px;scroll-margin-top:10px}
+  .grid{display:grid;gap:14px}
+  .g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+  @media(max-width:1100px){.g3,.g4{grid-template-columns:repeat(2,minmax(0,1fr))}.layout{grid-template-columns:1fr}nav{display:none}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+  .tile{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .tile .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+  .tile .v{font-size:26px;font-weight:750;margin-top:2px;color:var(--navy)}
+  .tile .n{font-size:12.5px;color:var(--muted)}
+  .plain{border-left:4px solid var(--teal);background:#E6F6F4;padding:10px 14px;border-radius:0 8px 8px 0;margin:10px 0}
+  .plain b.t{color:#0B6E69}
+  .look{border-left:4px solid var(--blue);background:#EAF0FD;padding:10px 14px;border-radius:0 8px 8px 0;margin:10px 0}
+  .look b.t{color:var(--blue)}
+  .warn{border-left:4px solid var(--amber);background:#FDF3E1;padding:10px 14px;border-radius:0 8px 8px 0;margin:10px 0}
+  .warn b.t{color:#8A5A12}
+  .bad{border-left:4px solid var(--red);background:#FDECEC;padding:10px 14px;border-radius:0 8px 8px 0;margin:10px 0}
+  .bad b.t{color:var(--red)}
+  .badge{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.05em;padding:2px 8px;border-radius:999px;vertical-align:middle;margin-right:4px}
+  .b-syn{background:#FDF3E1;color:#8A5A12}
+  .b-der{background:#EAF0FD;color:var(--blue)}
+  .b-sql{background:#E6F6F4;color:#0B6E69}
+  .b-llm{background:#F0EBFB;color:var(--violet)}
+  .b-cho{background:#EEF1F5;color:#44566C}
+  .st{display:inline-block;font-size:11px;font-weight:700;padding:1px 8px;border-radius:999px}
+  .s-ok{background:#E6F6F4;color:#0B6E69}.s-inc{background:#FDF3E1;color:#8A5A12}.s-grey{background:#EEF1F5;color:#44566C}
+  .s-cl{background:#EAF0FD;color:var(--blue)}.s-no{background:#FDECEC;color:#9B1C1C}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;margin:8px 0;background:#fff}
+  th,td{border-bottom:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+  th{color:var(--muted);font-weight:650;font-size:12px;text-transform:uppercase;letter-spacing:.04em;background:#F1F4F8}
+  td.num{text-align:right;font-variant-numeric:tabular-nums}
+  .page-head{display:flex;align-items:center;gap:10px;margin-top:30px}
+  .page-head h3{margin:0}
+  .page-head .pill{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:3px 12px;font-size:12px;color:var(--muted)}
+  .widget{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:12px 0}
+  .widget .wt{font-weight:700;font-size:15.5px}
+  .widget dl{display:grid;grid-template-columns:150px 1fr;gap:5px 14px;margin:10px 0 0;font-size:14px}
+  .widget dt{color:var(--muted)}
+  .widget dd{margin:0}
+  .steps{counter-reset:s;list-style:none;padding:0}
+  .steps li{counter-increment:s;position:relative;padding:6px 0 6px 40px}
+  .steps li::before{content:counter(s);position:absolute;left:0;top:6px;width:26px;height:26px;border-radius:50%;background:var(--teal);color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center}
+  .small{font-size:12.5px;color:var(--muted)}
+  .formula{font-family:var(--mono);background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin:8px 0;font-size:14px}
+  svg text{font-family:'Segoe UI',system-ui,sans-serif}
+</style>
+</head>
+<body>
+<div class="layout">
+<nav>
+  <div class="brand">Concordia</div>
+  <div class="sub">Different teams. Same truth. · A to Z</div>
+  <div class="grp">Start</div>
+  <a href="#tldr">0 · One-page summary</a>
+  <a href="#legend">How to read this guide</a>
+  <a href="#problem">1 · The problem</a>
+  <a href="#world">2 · The pretend company</a>
+  <div class="grp">How it works</div>
+  <a href="#arch">3 · How data flows</a>
+  <a href="#metrics">4 · The five metrics</a>
+  <a href="#words">5 · Words and badges on screen</a>
+  <div class="grp">The app</div>
+  <a href="#open">6 · Opening the app</a>
+  <a href="#sidebar">6.1 Sidebar</a>
+  <a href="#p-cc">6.2 Command center</a>
+  <a href="#p-ask">6.3 Ask Concordia</a>
+  <a href="#p-why">6.4 Why it changed</a>
+  <a href="#p-asof">6.5 As-of &amp; restatement</a>
+  <a href="#p-graph">6.6 One graph</a>
+  <a href="#p-gov">6.7 Governance</a>
+  <a href="#personas">7 · The five personas</a>
+  <div class="grp">Proof</div>
+  <a href="#answer">8 · How one answer is made</a>
+  <a href="#asof">9 · As-of and restatement</a>
+  <a href="#security">10 · Security and governance</a>
+  <a href="#checks">11 · How we checked it</a>
+  <div class="grp">Use it</div>
+  <a href="#demo">12 · Five-minute demo script</a>
+  <a href="#limits">13 · What it does NOT do</a>
+  <a href="#trouble">14 · Troubleshooting</a>
+  <a href="#runbook">15 · Runbook and file map</a>
+  <a href="#glossary">16 · Glossary</a>
+</nav>
+
+<main>
+<header>
+  <h1>Concordia: the complete A to Z guide</h1>
+  <p class="lede">Concordia is a supply chain app that runs entirely inside Snowflake. Five teams ask questions about the same business and every team gets the same number for the same question, with the definition, the coverage and the evidence attached. This guide explains, in plain English, what every screen shows, where every number comes from and what it does not prove.</p>
+  <p class="small">Figures are from Snowflake database <code>CONCORDIA</code> on account fmxjowh-brc04642, read on 2 October 2026 after both data batches were loaded (publish run with 126,073 source records and 43,948 governed results). All data is synthetic.</p>
+</header>
+
+<!-- ============================================================ 0 -->
+<section id="tldr">
+  <h2>0 · One-page summary</h2>
+  <div class="grid g4" style="margin-top:14px">
+    <div class="tile"><div class="k">Company</div><div class="v">Meridian Motion</div><div class="n">a made-up motor manufacturer: 3 plants, 3 warehouses, 40 suppliers, 24 customers</div></div>
+    <div class="tile"><div class="k">Source records</div><div class="v">126,073</div><div class="n">from six synthetic systems: ERP, MES, WMS, TMS, CRM, IoT</div></div>
+    <div class="tile"><div class="k">Governed metrics</div><div class="v">5</div><div class="n">each with one written definition, version 1.0.0, owner and approver</div></div>
+    <div class="tile"><div class="k">Published answers</div><div class="v">43,948</div><div class="n">every metric × month × scope × "known when", pre-computed in SQL</div></div>
+    <div class="tile"><div class="k">Matches reference</div><div class="v">35 / 35</div><div class="n">SQL answers equal an independent Python calculation on the test cases</div></div>
+    <div class="tile"><div class="k">Grid spot checks</div><div class="v">103 / 103</div><div class="n">published numbers equal a fresh live calculation</div></div>
+    <div class="tile"><div class="k">Hero story</div><div class="v">8 / 8</div><div class="n">MM-440 servo motor, May 2026: every expected number appears</div></div>
+    <div class="tile"><div class="k">AI's job</div><div class="v">Words only</div><div class="n">the language model picks the question and writes the sentence; SQL computes every number</div></div>
+  </div>
+  <div class="bad"><b class="t">The single most important caveat.</b> Every record is generated by a seeded simulator. Nothing here is a real company's data, an industry benchmark or a measured business result. The checks prove that the system is <em>consistent and governed</em>, not that it saves time or money.</div>
+</section>
+
+<section id="legend">
+  <h2>How to read this guide</h2>
+  <p>Badges tell you where a thing comes from.</p>
+  <p>
+    <span class="badge b-syn">SYNTHETIC</span> generated by the simulator &nbsp;
+    <span class="badge b-der">DERIVED</span> calculated from synthetic records &nbsp;
+    <span class="badge b-sql">GOVERNED SQL</span> computed by a metric's contract function in Snowflake &nbsp;
+    <span class="badge b-llm">LANGUAGE MODEL</span> words written by Cortex, never numbers &nbsp;
+    <span class="badge b-cho">CHOSEN</span> a design decision we made
+  </p>
+  <div class="plain"><b class="t">Plain English boxes</b> like this one say the same thing without jargon.</div>
+  <div class="look"><b class="t">What to look for</b> boxes tell you what to point at when you demo a screen.</div>
+</section>
+
+<!-- ============================================================ 1 -->
+<section id="problem">
+  <h2>1 · The problem</h2>
+  <div class="grid g2" style="margin-top:12px">
+    <div class="card">
+      <h4>The everyday version</h4>
+      <p>A VP asks: <em>"What was our on-time delivery in May?"</em> Five teams answer with five numbers, because each counts differently:</p>
+      <ul>
+        <li><b>Procurement</b> counts supplier deliveries against the purchase order date.</li>
+        <li><b>Logistics</b> counts shipments leaving the dock.</li>
+        <li><b>Customer service</b> counts against the latest revised promise, which flatters the number.</li>
+        <li><b>Planning</b> uses last night's stock snapshot with different part numbers.</li>
+        <li><b>Finance</b> books missing freight as zero, which makes cost look lower than it is.</li>
+      </ul>
+      <p>Meetings start by arguing about whose number is right. Numbers move after month end with no record of why. A chatbot on raw tables just invents a sixth answer.</p>
+    </div>
+    <div class="card">
+      <h4>What Concordia does about it</h4>
+      <ul>
+        <li><b>One definition per metric</b>, written down, versioned and hashed, with an owner.</li>
+        <li><b>One calculation</b>, done once in Snowflake SQL. The app, the chat and the semantic view all read the same result.</li>
+        <li><b>Refuses to guess.</b> "OTD" alone asks inbound or outbound. "OTIF" is refused because it is a different metric. Missing cost stays "incomplete", never zero.</li>
+        <li><b>Remembers what was known when.</b> You can see the May number as it looked on 5 June and as it looks after late documents arrived.</li>
+        <li><b>Shows its evidence.</b> Every answer carries the counts, the coverage, the reasons and an evidence ID.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 2 -->
+<section id="world">
+  <h2>2 · The pretend company <span class="badge b-syn">SYNTHETIC</span></h2>
+  <p><b>Meridian Motion</b> makes servo motors. The simulator (<code>sim/engine.py</code>, contract <code>CONCORDIA_SIM_V1</code>, fixed seed) plays out every day from 1 January 2025 to 15 July 2026: orders, purchases, production, stock moves, shipments, deliveries, returns, invoices and freight bills.</p>
+  <div class="grid g3">
+    <div class="card"><h4>Places</h4>Plants: Dayton, Reno, Stuttgart.<br>Distribution centres: Newark, Oakland, Hamburg.<br>Customer regions: Northeast, Southeast, Midwest, West, DACH, Benelux.</div>
+    <div class="card"><h4>Things and parties</h4>200 items, of which 40 are finished motors (MM-401 to MM-440).<br>40 suppliers, 24 customers.<br>The hero part is <b>MM-440</b>, bought finished from supplier Apex into Dayton.</div>
+    <div class="card"><h4>Two deliveries of data</h4><b>Batch 1</b> holds everything visible up to 5 June 2026.<br><b>Batch 2</b> adds the late documents: freight and brokerage bills, late proofs of delivery and June shipments. It arrives later and restates some answers.</div>
+  </div>
+  <h3>Six systems, six kinds of mess</h3>
+  <table>
+    <tr><th>System</th><th>What it holds</th><th class="num">Records</th><th>Deliberate mess</th></tr>
+    <tr><td>ERP</td><td>purchase orders, sales orders, invoices, costs</td><td class="num">40,840</td><td>vendor and material numbers that differ from other systems</td></tr>
+    <tr><td>MES</td><td>production orders and component use</td><td class="num">26,383</td><td>local plant codes</td></tr>
+    <tr><td>WMS</td><td>receipts, stock, quality holds</td><td class="num">36,503</td><td>units of measure, missing time zones</td></tr>
+    <tr><td>TMS</td><td>shipments, proofs of delivery, freight</td><td class="num">7,436</td><td>freight billed weeks later, pooled across receipts</td></tr>
+    <tr><td>CRM</td><td>customer promises and ratings</td><td class="num">4,645</td><td>revised promises that disagree with ERP (421 lines)</td></tr>
+    <tr><td>IoT</td><td>dock arrivals/departures, truck ids, lot ids and temperature</td><td class="num">10,266</td><td>independent sensor clock tied back to WMS receipts and shipments</td></tr>
+  </table>
+  <p>Records that cannot be trusted are <b>quarantined</b> rather than silently fixed: 58 with a missing time zone, 29 whose identity could not be resolved, 24 with an unknown unit of measure (111 in total).</p>
+  <div class="plain"><b class="t">Plain English.</b> We built a fake but realistic company on purpose, because no public dataset has suppliers, parts, plants, shipments, orders and customers all joined up. Because we generated it, we know the right answers, so we can test whether the system gets them.</div>
+</section>
+
+<!-- ============================================================ 3 -->
+<section id="arch">
+  <h2>3 · How data flows</h2>
+  <svg viewBox="0 0 1100 330" width="100%" role="img" aria-label="Concordia architecture">
+    <defs><marker id="ar" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#516D83"/></marker></defs>
+    <g>
+      <rect x="10" y="20" width="170" height="220" rx="12" fill="#fff" stroke="#D4DEE8"/>
+      <rect x="10" y="20" width="170" height="36" rx="12" fill="#516D83"/><text x="95" y="44" text-anchor="middle" fill="#fff" font-weight="700">SOURCES</text>
+      <text x="30" y="84" font-size="13">ERP · orders, costs</text><text x="30" y="110" font-size="13">MES · production</text>
+      <text x="30" y="136" font-size="13">WMS · stock, holds</text><text x="30" y="162" font-size="13">TMS · shipments</text>
+      <text x="30" y="188" font-size="13">CRM · promises</text><text x="30" y="210" font-size="13">IoT · dock sensors, lots</text><text x="30" y="232" font-size="11.5" fill="#516D83">gzipped JSON on a stage</text>
+    </g>
+    <g>
+      <rect x="225" y="20" width="185" height="220" rx="12" fill="#fff" stroke="#D4DEE8"/>
+      <rect x="225" y="20" width="185" height="36" rx="12" fill="#1746A2"/><text x="317" y="44" text-anchor="middle" fill="#fff" font-weight="700">LAND</text>
+      <text x="243" y="84" font-size="13">RAW_RECORD</text><text x="243" y="104" font-size="11.5" fill="#516D83">append-only, every row hashed</text>
+      <text x="243" y="132" font-size="13">Stream + Task</text><text x="243" y="152" font-size="11.5" fill="#516D83">new rows trigger the pipeline</text>
+      <text x="243" y="180" font-size="13">Quarantine (111)</text><text x="243" y="200" font-size="11.5" fill="#516D83">untrusted rows set aside</text>
+    </g>
+    <g>
+      <rect x="455" y="20" width="200" height="220" rx="12" fill="#fff" stroke="#D4DEE8"/>
+      <rect x="455" y="20" width="200" height="36" rx="12" fill="#102A43"/><text x="555" y="44" text-anchor="middle" fill="#fff" font-weight="700">CORE</text>
+      <text x="473" y="84" font-size="13">Identity resolution</text><text x="473" y="104" font-size="11.5" fill="#516D83">6 source keys → 1 part / party</text>
+      <text x="473" y="132" font-size="13">Ontology + knowledge graph</text><text x="473" y="152" font-size="11.5" fill="#516D83">part, party, facility, region</text>
+      <text x="473" y="180" font-size="13">Metric SQL functions</text><text x="473" y="200" font-size="11.5" fill="#516D83">the only place numbers are made</text>
+    </g>
+    <g>
+      <rect x="700" y="20" width="185" height="220" rx="12" fill="#fff" stroke="#D4DEE8"/>
+      <rect x="700" y="20" width="185" height="36" rx="12" fill="#0E9F9A"/><text x="792" y="44" text-anchor="middle" fill="#fff" font-weight="700">APP</text>
+      <text x="718" y="84" font-size="13">Published grid</text><text x="718" y="104" font-size="11.5" fill="#516D83">19 "known when" points</text>
+      <text x="718" y="132" font-size="13">Persona functions</text><text x="718" y="152" font-size="11.5" fill="#516D83">masking applied in SQL</text>
+      <text x="718" y="180" font-size="13">ASK procedure</text><text x="718" y="200" font-size="11.5" fill="#516D83">+ semantic view</text>
+    </g>
+    <g>
+      <rect x="930" y="20" width="160" height="220" rx="12" fill="#fff" stroke="#D4DEE8"/>
+      <rect x="930" y="20" width="160" height="36" rx="12" fill="#1746A2"/><text x="1010" y="44" text-anchor="middle" fill="#fff" font-weight="700">YOU</text>
+      <text x="946" y="84" font-size="13">Streamlit app</text><text x="946" y="104" font-size="11.5" fill="#516D83">7 pages, in Snowflake</text>
+      <text x="946" y="132" font-size="13">Ask Concordia</text><text x="946" y="152" font-size="11.5" fill="#516D83">plain-English questions</text>
+      <text x="946" y="180" font-size="13">Cortex COMPLETE</text><text x="946" y="200" font-size="11.5" fill="#516D83">routes + narrates only</text>
+    </g>
+    <g stroke="#516D83" stroke-width="2.5" marker-end="url(#ar)">
+      <line x1="182" y1="130" x2="221" y2="130"/><line x1="412" y1="130" x2="451" y2="130"/>
+      <line x1="657" y1="130" x2="696" y2="130"/><line x1="887" y1="130" x2="926" y2="130"/>
+    </g>
+    <rect x="225" y="262" width="865" height="50" rx="12" fill="#FDF3E1"/>
+    <text x="245" y="292" font-size="13.5"><tspan font-weight="700" fill="#B7791F">GOV</tspan>  metric contracts (versioned, hashed) · who may see cost and audit · rejected words · evidence · question audit · pipeline runs</text>
+  </svg>
+  <ol class="steps">
+    <li><b>Land.</b> Extracts are copied into <code>LAND.RAW_RECORD</code> exactly as received, with a hash so duplicates are ignored. Nothing is edited in place.</li>
+    <li><b>Resolve.</b> <code>CORE.RESOLVE()</code> maps each system's codes to one canonical part, party and facility, converts units and time zones, and quarantines what it cannot trust.</li>
+    <li><b>Compute.</b> Five SQL functions, one per metric, calculate the answer for any scope, month and "known when" date. They are the only numeric authority.</li>
+    <li><b>Publish.</b> <code>APP.PUBLISH_RESULTS()</code> runs those functions across the grid (about 41,000 answers) so the app is fast, and keeps the previous run so changes can be shown.</li>
+    <li><b>Serve.</b> The app and the chat read the <code>APP</code> layer only, through functions that apply persona rules.</li>
+    <li><b>Automate.</b> When new rows land, the stream-gated task <code>CORE.RESOLVE_TASK</code> resolves and republishes. That is how batch 2 was loaded.</li>
+  </ol>
+</section>
+
+<!-- ============================================================ 4 -->
+<section id="metrics">
+  <h2>4 · The five metrics <span class="badge b-sql">GOVERNED SQL</span></h2>
+  <p>Each metric has a written contract you can read on the Governance page. Here is what each one means, with the May 2026 MM-440 numbers you will see in the app.</p>
+
+  <div class="widget"><div class="wt">Inbound supplier OTD · Procurement</div>
+    <dl><dt>Question</dt><dd>Did the supplier deliver the full accepted quantity of each purchase order line by the date they committed to?</dd>
+    <dt>Counted when</dt><dd>On the supplier's commitment date: their acknowledged promise if it arrived within two business days of the order, otherwise the date the buyer asked for.</dd>
+    <dt>Rule of thumb</dt><dd>A partial delivery is a miss. A rejected batch does not count as delivered.</dd>
+    <dt>MM-440, Dayton, May</dt><dd><b>2 of 3 lines on time = 66.7%</b>. One line was short because 20 units were rejected.</dd></dl></div>
+
+  <div class="widget"><div class="wt">Outbound customer OTD · Logistics</div>
+    <dl><dt>Question</dt><dd>Did the customer receive the complete quantity by the <em>original</em> promise date?</dd>
+    <dt>Counted when</dt><dd>On the original accepted promise date. Later revisions do not move the goalposts.</dd>
+    <dt>Rule of thumb</dt><dd>"Delivered" means proof of delivery (or ready for pickup when the customer collects). Leaving our dock is not enough.</dd>
+    <dt>MM-440, May</dt><dd><b>1 of 4 lines on time = 25.0%</b>, down from 75–100% in earlier months. Three customer lines in the Northeast were late, partial or revised.</dd></dl></div>
+
+  <div class="widget"><div class="wt">Unit fill rate · Logistics</div>
+    <dl><dt>Question</dt><dd>What share of ordered units actually shipped, regardless of timing?</dd>
+    <dt>Rule of thumb</dt><dd>Counts units, not lines. Over-shipping is capped at the ordered quantity.</dd>
+    <dt>MM-440, May</dt><dd><b>40 of 40 units = 100%</b>. Everything shipped. It just arrived late, which is why OTD and fill rate disagree on purpose.</dd></dl></div>
+
+  <div class="widget"><div class="wt">Days of inventory · Planning</div>
+    <dl><dt>Question</dt><dd>How many days would available stock cover recent demand?</dd>
+    <dt>Formula</dt><dd><span class="formula">(on hand − quality hold − allocated) × 28 ÷ demand over the last 28 days</span></dd>
+    <dt>Rule of thumb</dt><dd>It is a snapshot on a date, not a monthly total. Published for every finished motor represented in inventory, at site and network scope.</dd>
+    <dt>On the card</dt><dd>The value in days, with available units × 28 as the numerator and 28-day demand as the denominator.</dd></dl></div>
+
+  <div class="widget"><div class="wt">Landed cost per accepted unit · Finance</div>
+    <dl><dt>Question</dt><dd>What did each accepted unit really cost to get here, including merchandise, freight, duty, insurance and brokerage, less credits?</dd>
+    <dt>Rule of thumb</dt><dd>If any required cost is missing, the answer is <span class="st s-inc">INCOMPLETE</span> and no headline number is shown. Missing is never treated as zero.</dd>
+    <dt>MM-440, Dayton, May</dt><dd><b>As known on 5 June: INCOMPLETE</b> (freight and brokerage bills not in yet, coverage 0%). <b>As known on 15 July: $12.50</b> per unit (237,500 cents ÷ 190 units, coverage 100%).</dd></dl></div>
+
+  <div class="warn"><b class="t">Why the network landed cost is always INCOMPLETE.</b> Across all parts, some receipt in every month is missing a cost document, so the network total is withheld by contract. Pick a single part and facility to see a value. This is the system refusing to guess, not a bug.</div>
+</section>
+
+<!-- ============================================================ 5 -->
+<section id="words">
+  <h2>5 · Words and badges on screen</h2>
+  <table>
+    <tr><th>You see</th><th>It means</th></tr>
+    <tr><td><span class="st s-ok">COMPLETE</span></td><td>Every input the contract needs was present. The number is final for that "known when" date.</td></tr>
+    <tr><td><span class="st s-inc">INCOMPLETE</span></td><td>Some inputs are missing (for example a freight bill, or lines excluded for bad data). For landed cost the headline is withheld. For counts, the value is shown but flagged.</td></tr>
+    <tr><td><span class="st s-no">FORBIDDEN</span></td><td>Your persona is not allowed to see this (for example cost for the planner). Shown as "Not shown".</td></tr>
+    <tr><td><span class="st s-cl">CLARIFY</span></td><td>The question was ambiguous. Concordia asks which governed metric you meant instead of picking one.</td></tr>
+    <tr><td><span class="st s-no">REJECT</span></td><td>The term maps to no governed metric (for example OTIF). Concordia says so instead of approximating.</td></tr>
+    <tr><td><span class="st s-grey">ZERO_DENOMINATOR</span> / <span class="st s-grey">ZERO_DEMAND</span></td><td>Nothing to measure in that scope (no lines due, no demand). Not the same as 0%.</td></tr>
+    <tr><td><code>2 / 3</code></td><td>Numerator over denominator: on-time lines over lines due.</td></tr>
+    <tr><td><code>coverage 1.000000</code></td><td>Share of the scope whose inputs were complete. 1 = all of it, 0 = none.</td></tr>
+    <tr><td><code>1 affected</code></td><td>How many commitments missed or were excluded. These are what the evidence lists.</td></tr>
+    <tr><td>Grey chips like <code>FREIGHT_AMOUNT_MISSING</code></td><td>Machine-readable reasons, copied from the SQL result.</td></tr>
+    <tr><td><b>Early</b> vs <b>Final</b></td><td>Early = what was known on the 5th of the following month. Final = what was known on 15 July 2026, after all late documents.</td></tr>
+    <tr><td>Values like <code>0.2500</code></td><td>The contract's exact display, four decimals. Cards also show the same value as a percentage to one decimal.</td></tr>
+  </table>
+</section>
+
+<!-- ============================================================ 6 -->
+<section id="open">
+  <h2>6 · The app, page by page</h2>
+  <p><b>Where:</b> Snowsight → Projects → Streamlit → <b>CONCORDIA</b> (database <code>CONCORDIA</code>, schema <code>APP</code>). It runs on warehouse <code>CONCORDIA_APP_WH</code> and is owned by role <code>CONCORDIA_APP_OWNER</code>, which can only read the APP layer. The first load takes 10–20 seconds while the warehouse wakes up.</p>
+  <div class="warn"><b class="t">If a page says "No published periods yet"</b> while the sidebar shows a publish date and record counts, the app could not read the dates, not that data is missing. That was fixed on 2 October; reload the app. See <a href="#trouble">Troubleshooting</a>.</div>
+
+  <div class="page-head" id="sidebar"><h3>6.1 Sidebar</h3><span class="pill">on every page</span></div>
+  <div class="widget"><div class="wt">Viewing as</div>
+    <dl><dt>Shows</dt><dd>Which of the five demo personas you are. Changing it changes what the SQL lets you see. The box below says whether cost and audit are visible.</dd>
+    <dt>Look for</dt><dd>Switch from Nora Hale (VP) to Priya Shah (Supply Planner): the landed cost card changes to "Not shown" with status FORBIDDEN.</dd></dl></div>
+  <div class="widget"><div class="wt">Navigation</div><dl><dt>Shows</dt><dd>The seven pages described below.</dd></dl></div>
+  <div class="widget"><div class="wt">Published … · source records · governed results</div>
+    <dl><dt>Shows</dt><dd>When the latest publish run finished, how many raw records it used (126,073) and how many answers it published (43,948).</dd>
+    <dt>From</dt><dd><code>APP.V_PUBLISH_RUN</code></dd></dl></div>
+  <div class="widget"><div class="wt">Yellow disclosure</div><dl><dt>Shows</dt><dd>That the data is synthetic and personas are demo identities on one Snowflake role. Keep it visible in demos.</dd></dl></div>
+
+  <div class="page-head" id="p-cc"><h3>6.2 Command center</h3><span class="pill">the one-glance view</span></div>
+  <div class="widget"><div class="wt">Filters: Month · Known as of · Part · Lens</div>
+    <dl><dt>Shows</dt><dd>Pick a month, whether you want the early or final view, a finished part (default MM-440) or All parts, and optionally a facility or region.</dd>
+    <dt>Note</dt><dd>The grid publishes part + facility and part + region combinations. Supplier and customer splits exist for All parts only.</dd></dl></div>
+  <div class="widget"><div class="wt">Five KPI cards</div>
+    <dl><dt>Shows</dt><dd>One card per metric for the chosen scope: the team that owns it, the value, the status pill, numerator / denominator, coverage, affected commitments and reason chips.</dd>
+    <dt>From</dt><dd><code>APP.RESULTS_FOR(persona, part, facility, region, …)</code>, which reads the published grid and applies masking</dd>
+    <dt>Look for</dt><dd>MM-440 May final: 66.7% inbound, 25.0% outbound, 100% fill, $12.50 landed cost. Switch "Known as of" to Early and landed cost becomes INCOMPLETE with <code>FREIGHT_AMOUNT_MISSING</code>.</dd></dl></div>
+  <div class="widget"><div class="wt">Trend</div>
+    <dl><dt>Shows</dt><dd>Monthly line for the chosen metric. Dark line = final, light line = early. Where they differ, late documents changed the answer.</dd>
+    <dt>Look for</dt><dd>MM-440 outbound OTD runs 75–100% through April 2026 and then drops to 25% in May. That is the question the hero story answers.</dd></dl></div>
+  <div class="widget"><div class="wt">Where it comes from</div>
+    <dl><dt>Shows</dt><dd>Bar chart breaking the metric down by region, facility, customer, supplier or part (options depend on the metric and whether a part is chosen). Up to 15 bars.</dd>
+    <dt>From</dt><dd><code>APP.BREAKDOWN_FOR</code></dd>
+    <dt>Look for</dt><dd>Choose All parts, Outbound OTD, by Geography to compare regions. Every bar is a published governed answer, not a chart-side calculation.</dd></dl></div>
+
+  <div class="page-head" id="p-ask"><h3>6.3 Ask Concordia</h3><span class="pill">plain-English questions</span></div>
+  <div class="widget"><div class="wt">Suggested semantic questions</div>
+    <dl><dt>Shows</dt><dd>Stable demo prompts for the governed metric comparison, supplier-to-customer trace, IoT/lot trace and evidence questions.</dd>
+    <dt>Look for</dt><dd>The metric comparison returns only published metric values at an exact governed scope. The trace questions exercise the ontology beyond KPI lookup.</dd></dl></div>
+  <div class="widget"><div class="wt">Chat box</div>
+    <dl><dt>Shows</dt><dd>Type a question about metrics or the supply-chain ontology. Governed semantic answer is the default; Metric evidence envelope is an optional deterministic drill-down.</dd></dl></div>
+  <div class="widget"><div class="wt">Answer card</div>
+    <dl><dt>Shows</dt><dd>For semantic mode: Analyst's interpretation, guarded SQL, result rows and exact-scope parity verdict. For evidence mode: the metric card, narration, metric version, period, known-as-of, scope, evidence ID, definition hash and origin.</dd>
+    <dt>Guard</dt><dd>Generated SQL must be a read-only query over <code>APP.SUPPLY_CHAIN_ONTOLOGY</code>. Metric rows are accepted only when they match published values for the exact metric, month, known-as-of and scope.</dd>
+    <dt>Evidence envelope</dt><dd>In evidence mode, expand it to see counts, reasons, coverage and sample evidence records.</dd></dl></div>
+
+  <div class="page-head" id="p-why"><h3>6.4 Why it changed</h3><span class="pill">month-over-month bridge</span></div>
+  <div class="widget"><div class="wt">Filters</div><dl><dt>Shows</dt><dd>Metric (outbound OTD, inbound OTD or fill rate), month, part (default MM-440) and region (default Northeast for outbound).</dd></dl></div>
+  <div class="widget"><div class="wt">Prior vs current cards</div><dl><dt>Shows</dt><dd>The metric for the previous month and the chosen month, side by side, final view.</dd>
+    <dt>Look for</dt><dd>MM-440 Northeast: April 100% → May 25%.</dd></dl></div>
+  <div class="widget"><div class="wt">Driver chart</div>
+    <dl><dt>Shows</dt><dd>Count of missed or excluded lines in each month, grouped by driver: <code>NOT_DELIVERED</code>, <code>LATE_DELIVERY</code>, <code>PROMISE_REVISED</code>, <code>PARTIAL_DELIVERY</code>, <code>FAILED_OR_MISDELIVERED</code> or <code>EXCLUDED</code>.</dd>
+    <dt>From</dt><dd><code>APP.V_CONTRIBUTION</code>, the line-level rows the published numbers were built from</dd></dl></div>
+  <div class="widget"><div class="wt">Contributing lines</div><dl><dt>Shows</dt><dd>Every order line in the chosen month: outcome (HIT / MISS / EXCLUDED), driver, commitment date, completion date, quantity and reasons. This is the audit trail behind the card.</dd></dl></div>
+
+  <div class="page-head" id="p-asof"><h3>6.5 As-of replay</h3><span class="pill">what was known when</span></div>
+  <div class="widget"><div class="wt">Landed cost: as known 5 Jun vs 15 Jul</div>
+    <dl><dt>Shows</dt><dd>MM-440 at Dayton for May 2026 on both dates: INCOMPLETE, then $12.50.</dd></dl></div>
+  <div class="widget"><div class="wt">Receipts table</div>
+    <dl><dt>Shows</dt><dd>Each goods receipt behind that number on each date: accepted quantity, whether its costs are covered, which costs are missing, landed and freight amounts.</dd>
+    <dt>From</dt><dd><code>APP.RECEIPTS_FOR</code>. Cost columns are blank for personas without cost access, and a caption says so.</dd></dl></div>
+  <div class="widget"><div class="wt">Restated by the latest load</div>
+    <dl><dt>Shows</dt><dd>Network-level answers that changed between the last two publish runs (before and after batch 2), with the old and new status and value.</dd>
+    <dt>Look for</dt><dd>June 2026 fill rate 31.4% → 98.2% and June outbound OTD 33.5% → 85.7%, because June's shipments and deliveries only arrived in batch 2.</dd></dl></div>
+  <div class="widget"><div class="wt">Pipeline runs</div><dl><dt>Shows</dt><dd>Every load, resolve and publish step with its time, status and row counts, from <code>GOV.PIPELINE_RUN</code> via <code>APP.V_PIPELINE</code>.</dd></dl></div>
+
+  <div class="page-head" id="p-graph"><h3>6.6 One graph</h3><span class="pill">six systems, one identity</span></div>
+  <div class="widget"><div class="wt">Graph around a part</div>
+    <dl><dt>Shows</dt><dd>The chosen part in the middle, with up to 28 connected nodes: who supplies it, which plants can make it, which components go into it. Edge labels say the relationship.</dd>
+    <dt>From</dt><dd><code>APP.V_KG_EDGE</code> (115,506 edges of 23 types)</dd></dl></div>
+  <div class="widget"><div class="wt">Source identities for this part</div>
+    <dl><dt>Shows</dt><dd>The code each system uses for this part and how it was matched. This includes ERP, MES, WMS, TMS, CRM and IoT identities.</dd></dl></div>
+  <div class="widget"><div class="wt">Data quality the metrics refuse to hide</div>
+    <dl><dt>Shows</dt><dd>A bar chart of quarantined records by reason, identity-resolution candidates, a donut of records by source system, and a count of the 421 sales lines where ERP and CRM disagree on the promise.</dd>
+    <dt>Look for</dt><dd>The promise caption: outbound OTD always uses the original promise, so Logistics and Customer Service see the same number.</dd></dl></div>
+
+  <div class="page-head" id="p-gov"><h3>6.7 Governance</h3><span class="pill">the rulebook and the logbook</span></div>
+  <table>
+    <tr><th>Tab</th><th>What it shows</th></tr>
+    <tr><td>Metric contracts</td><td>One expander per metric: the question, period clock, numerator and denominator definitions, owner, approver, the SQL function that computes it and the definition hash.</td></tr>
+    <tr><td>Ambiguity rules</td><td>Words Concordia refuses or clarifies: "otd", "fill rate", "inventory days" and "cost" → CLARIFY; "otif", "shipping on time", "merchandise plus outbound freight" and "customer rating" → REJECT, each with the reason.</td></tr>
+    <tr><td>Entitlements</td><td>The five personas and whether each can see cost and the full audit.</td></tr>
+    <tr><td>Query audit</td><td>Every question asked: who, when, route and outcome. The auditor sees everyone's; other personas see their own.</td></tr>
+    <tr><td>Evidence</td><td>Every evidence envelope written by an answer, with its hash.</td></tr>
+    <tr><td>Source mappings</td><td>Field-by-field: which source field feeds which canonical column, the rule, the policy when unmapped, and the owner.</td></tr>
+  </table>
+</section>
+
+<!-- ============================================================ 7 -->
+<section id="personas">
+  <h2>7 · The five personas</h2>
+  <table>
+    <tr><th>Persona</th><th>Name and title</th><th>Sees cost</th><th>Sees full audit</th></tr>
+    <tr><td>EXECUTIVE</td><td>Nora Hale, VP Supply Chain</td><td>Yes</td><td>Own questions only</td></tr>
+    <tr><td>PROCUREMENT</td><td>Marcus Webb, Procurement Manager</td><td>Yes</td><td>Own questions only</td></tr>
+    <tr><td>LOGISTICS</td><td>Elena Voss, Logistics Manager</td><td>No</td><td>Own questions only</td></tr>
+    <tr><td>PLANNER</td><td>Priya Shah, Supply Planner</td><td>No</td><td>Own questions only</td></tr>
+    <tr><td>AUDITOR</td><td>Jordan Ellis, Data Steward / Auditor</td><td>Yes</td><td>Yes</td></tr>
+  </table>
+  <div class="warn"><b class="t">Honest limit.</b> The rules are enforced in SQL, but in this demo you choose the persona from a dropdown. Production would map personas from Snowflake users and roles.</div>
+</section>
+
+<!-- ============================================================ 8 -->
+<section id="answer">
+  <h2>8 · How one answer is made</h2>
+  <ol class="steps">
+    <li><b>Semantic view first.</b> The primary mode sends the question to Cortex Analyst over <code>APP.SUPPLY_CHAIN_ONTOLOGY</code>. <span class="badge b-llm">LANGUAGE MODEL</span></li>
+    <li><b>Verified queries.</b> Approved questions and their SQL live on the semantic view. If generated SQL fails, a close approved question can provide deterministic fallback SQL.</li>
+    <li><b>SQL guard.</b> <code>APP.RUN_SEMANTIC_SQL</code> allows only read-only queries over that semantic view, rejects outer arithmetic or re-aggregation, and requires metric, month, as-of and scope.</li>
+    <li><b>Exact-scope proof.</b> Every metric result must equal the published row for the same metric, month, known-as-of and scope. <span class="badge b-sql">GOVERNED SQL</span></li>
+    <li><b>Masking policy.</b> Landed-cost columns are masked by Snowflake for personas without cost visibility.</li>
+    <li><b>Evidence mode.</b> The optional Metric evidence envelope mode calls <code>APP.ASK_METRIC</code> for a deterministic single-metric envelope and audit record.</li>
+  </ol>
+  <div class="plain"><b class="t">Plain English.</b> The AI is allowed to understand the question and to word the answer. It is never allowed to calculate. If it tries to change a number, even by rounding, its sentence is thrown away.</div>
+  <h3>Questions to try</h3>
+  <ul>
+    <li>Compare outbound customer on-time delivery, unit fill rate, and days of inventory for MM-440 at Dayton in May 2026, final.</li>
+    <li>Show the product-level supplier, component, home plant, customer and region paths for motor MM-401.</li>
+    <li>Show IoT dock events and lots for MM-440 at Dayton.</li>
+    <li>Why did outbound customer OTD for MM-440 change in May 2026? <span class="small">evidence mode</span></li>
+    <li>What was OTD last month? <span class="small">clarify</span> · What is our OTIF for May 2026? <span class="small">reject in evidence mode</span></li>
+  </ul>
+</section>
+
+<!-- ============================================================ 9 -->
+<section id="asof">
+  <h2>9 · As-of and restatement</h2>
+  <p>Every published answer is stamped with the moment it represents. There are 19 such moments: the 5th of the month after each of 18 months (the "early" view), plus 15 July 2026 (the "final" view). Each SQL function only uses records that were visible at that moment.</p>
+  <table>
+    <tr><th>Network, June 2026, final</th><th class="num">After batch 1</th><th class="num">After batch 2</th><th>Why</th></tr>
+    <tr><td>Unit fill rate</td><td class="num">31.4%</td><td class="num">98.2%</td><td>June shipment confirmations arrive in batch 2</td></tr>
+    <tr><td>Outbound customer OTD</td><td class="num">33.5%</td><td class="num">85.7%</td><td>proofs of delivery arrive in batch 2</td></tr>
+    <tr><td>May fill rate</td><td class="num">96.3%</td><td class="num">97.4%</td><td>a few late confirmations</td></tr>
+  </table>
+  <div class="plain"><b class="t">Plain English.</b> A number can change for two honest reasons: later information arrived, or a definition changed. Concordia keeps both runs and shows which numbers moved, so nobody has to wonder whether someone edited the spreadsheet.</div>
+</section>
+
+<!-- ============================================================ 10 -->
+<section id="security">
+  <h2>10 · Security and governance</h2>
+  <ul>
+    <li><b>Separate roles.</b> <code>CONCORDIA_ADMIN</code> builds, <code>CONCORDIA_TRANSFORM</code> runs the task, <code>CONCORDIA_APP_OWNER</code> owns the app. ACCOUNTADMIN does not own the app.</li>
+    <li><b>The app cannot read raw data.</b> It uses selected APP secure views/functions plus the narrow governance context required for persona-aware execution; it has no direct LAND or CORE table access.</li>
+    <li><b>Masking in Snowflake.</b> A masking policy on semantic result columns hides landed cost for Planning and Logistics. The deterministic APP functions also enforce cost entitlement.</li>
+    <li><b>Contracts are hashed.</b> Each metric's definition has a SHA-2 hash shown on every answer, so a silent definition change would be visible.</li>
+    <li><b>Provenance is enforced.</b> Every raw record is labelled <code>SYNTHETIC_*</code> and every result <code>DERIVED_FROM_SYNTHETIC</code>. The label <code>OBSERVED</code> is forbidden by tests.</li>
+  </ul>
+</section>
+
+<!-- ============================================================ 11 -->
+<section id="checks">
+  <h2>11 · How we checked it</h2>
+  <table>
+    <tr><th>Check</th><th>What it compares</th><th class="num">Result</th></tr>
+    <tr><td>Golden parity</td><td>The SQL functions vs an independent Python implementation, on the hand-built golden test worlds at their as-of dates</td><td class="num">35 / 35</td></tr>
+    <tr><td>Grid parity</td><td>Published rows (random sample plus all MM-440 May rows) vs a live call of the same SQL function</td><td class="num">103 / 103</td></tr>
+    <tr><td>Hero checks</td><td>The MM-440 May story values, including the restated landed cost after batch 2</td><td class="num">8 / 8</td></tr>
+    <tr><td>Security</td><td>Role denials, masking per persona, clarify / reject routing, no OBSERVED, no simulator truth on the stage</td><td class="num">passed</td></tr>
+    <tr><td>Unit tests</td><td>Python reference metrics and static rules on the app (no metric maths, APP layer only, synthetic disclosure)</td><td class="num">18 passed</td></tr>
+    <tr><td>Persona proof</td><td>The same OTD question as Planning, Procurement and Logistics, plus role-level semantic hashes</td><td class="num">passed</td></tr>
+    <tr><td>Ontology proof</td><td>IoT/lots, advertised graph edges, all-motor inventory publishing and primary semantic questions</td><td class="num">passed</td></tr>
+    <tr><td>App smoke</td><td>All seven pages executed across parts and personas against the live account</td><td class="num">no errors</td></tr>
+  </table>
+  <p class="small">Run them again with <code>python scripts/verify.py golden grid hero security ask personas ontology</code>. Results are written to <code>data/generated/verification.json</code>.</p>
+</section>
+
+<!-- ============================================================ 12 -->
+<section id="demo">
+  <h2>12 · Five-minute demo script</h2>
+  <ol class="steps">
+    <li><b>Command center, as Nora Hale.</b> "Same part, same month, five teams, one card each." Point at 2/3, 1/4, 40/40 and the coverage line. Show the May dip on the trend.</li>
+    <li><b>Flip Known as of to Early.</b> Landed cost becomes INCOMPLETE with the missing freight reasons. "We don't show a number we can't stand behind."</li>
+    <li><b>Ask Concordia.</b> Click the "why did outbound OTD change" question. Show the narration, the comparison card and the evidence envelope. Then click the two probes: OTD → clarify, OTIF → reject.</li>
+    <li><b>Why it changed.</b> April 100% vs May 25%, the drivers, and the actual late lines.</li>
+    <li><b>As-of replay.</b> INCOMPLETE → $12.50 with the receipts, then the restated June numbers after batch 2.</li>
+    <li><b>Switch to Priya Shah.</b> Landed cost is now "Not shown / FORBIDDEN". "Masking lives in SQL, not in the app."</li>
+    <li><b>Governance.</b> Open one contract: definition, owner, SQL function, hash. Close with "the model words it, the contract calculates it".</li>
+  </ol>
+</section>
+
+<!-- ============================================================ 13 -->
+<section id="limits">
+  <h2>13 · What this project does NOT do</h2>
+  <ul>
+    <li>It does not use or claim real company, customer, supplier or industry data. Every number is synthetic.</li>
+    <li>It does not prove time saved, accuracy on real ERP data, or any business outcome. None of that was measured.</li>
+    <li>It does not map personas to corporate SSO users. The app persona is selected in the UI; real Snowflake persona roles independently prove access and metric identity.</li>
+    <li>The primary Ask mode uses Cortex Analyst over <code>APP.SUPPLY_CHAIN_ONTOLOGY</code>. Cortex Search and Cortex Agents are not deployed.</li>
+    <li>IoT readings and lots are synthetic dock telemetry, not a live device connector.</li>
+    <li>It does not forecast, optimise or recommend. It answers governed questions about what happened.</li>
+    <li>Answers take 10–20 seconds because of the language model call.</li>
+    <li>The model's narration can occasionally over-explain (for example calling COMPLETE "verified"). The numbers in it are always checked.</li>
+    <li>MM-440's landed cost in earlier months is about $23–33 per unit versus $12.50 for the May hero receipts, which come from a fixed test fixture. Don't present that as a real price drop.</li>
+  </ul>
+</section>
+
+<!-- ============================================================ 14 -->
+<section id="trouble">
+  <h2>14 · Troubleshooting</h2>
+  <table>
+    <tr><th>Symptom</th><th>Cause</th><th>Fix</th></tr>
+    <tr><td>"No published periods yet" with a publish date in the sidebar</td><td>The Snowflake runtime returned dates in a type the app could not read</td><td>Fixed on 2 Oct: dates are held as text. Reload the app; if it persists, redeploy with <code>python scripts/deploy.py streamlit</code>.</td></tr>
+    <tr><td><code>NaTType does not support strftime</code></td><td>Same date-type issue</td><td>Same fix.</td></tr>
+    <tr><td>App loads slowly the first time</td><td>Warehouse resuming, packages installing</td><td>Wait 20 seconds and reload.</td></tr>
+    <tr><td>Ask takes 10–20 seconds</td><td>Cortex routing and narration calls</td><td>Expected. Verified questions skip the routing call.</td></tr>
+    <tr><td>A card says "No published row for this scope"</td><td>That part + scope combination isn't in the grid (for example part + supplier)</td><td>Use All parts, or ask the question in Ask Concordia to compute it live.</td></tr>
+    <tr><td>Landed cost shows "Not shown"</td><td>Your persona can't see cost</td><td>Switch to Nora, Marcus or Jordan.</td></tr>
+    <tr><td>Network landed cost is always INCOMPLETE</td><td>By contract: some cost document is missing in every month</td><td>Choose a part and facility.</td></tr>
+  </table>
+</section>
+
+<!-- ============================================================ 15 -->
+<section id="runbook">
+  <h2>15 · Runbook and file map</h2>
+<pre>python scripts/generate_world.py                    # build the synthetic world (NumPy 2.2.6 required)
+python scripts/deploy.py                            # create everything, load batch 1, publish, deploy app
+python scripts/deploy.py reset upload load1 resolve eval publish   # reload a regenerated world
+python scripts/deploy.py streamlit                  # redeploy only the app
+python scripts/verify.py golden grid hero security ask personas ontology
+python -m pytest tests -q
+streamlit run streamlit/app.py                      # same app locally, against the same account</pre>
+  <table>
+    <tr><th>Path</th><th>What it is</th></tr>
+    <tr><td><code>sim/</code></td><td>The simulator: master data, daily engine, source-system projection</td></tr>
+    <tr><td><code>src/concordia/metrics.py</code></td><td>Independent Python reference implementation used to check SQL</td></tr>
+    <tr><td><code>sql/00_setup.sql</code> … <code>02_land.sql</code></td><td>Database, warehouses, roles, landing tables, stream</td></tr>
+    <tr><td><code>sql/03_core.sql</code></td><td>Resolution, ontology, knowledge graph, pipeline task</td></tr>
+    <tr><td><code>sql/04_metrics.sql</code></td><td>The five metric SQL functions (the numeric authority)</td></tr>
+    <tr><td><code>sql/05_app.sql</code></td><td>Publisher, secure views, persona functions, ASK and ASK_METRIC</td></tr>
+    <tr><td><code>sql/06_semantic.sql</code></td><td>Semantic view <code>APP.SUPPLY_CHAIN_ONTOLOGY</code>, verified queries, masking and guarded execution</td></tr>
+    <tr><td><code>sql/07_streamlit.sql</code></td><td>Streamlit app object</td></tr>
+    <tr><td><code>sql/08_eval.sql</code></td><td>Loads the golden test worlds</td></tr>
+    <tr><td><code>streamlit/app.py</code></td><td>The seven-page app</td></tr>
+    <tr><td><code>scripts/deploy.py</code>, <code>verify.py</code></td><td>Deployment and verification</td></tr>
+    <tr><td><code>docs/00</code>–<code>10</code></td><td>Charter, PRD, UX, architecture, metrics, simulation, evaluation, security, brand, demo, handoff</td></tr>
+    <tr><td><code>../docs/submission/CONCORDIA-Prototype-Deck.pptx</code></td><td>Submission deck</td></tr>
+  </table>
+</section>
+
+<!-- ============================================================ 16 -->
+<section id="glossary">
+  <h2>16 · Glossary</h2>
+  <table>
+    <tr><td><b>OTD</b></td><td>On-time delivery. Concordia has two, inbound (suppliers) and outbound (customers), and never blends them.</td></tr>
+    <tr><td><b>OTIF</b></td><td>On time in full. A different metric that Concordia does not define, so it refuses the term.</td></tr>
+    <tr><td><b>Fill rate</b></td><td>Share of ordered units that shipped, ignoring timing.</td></tr>
+    <tr><td><b>Landed cost</b></td><td>Everything it costs to get a unit into your facility: price, freight, duty, insurance, brokerage, less credits.</td></tr>
+    <tr><td><b>As-of / known when</b></td><td>The moment an answer represents. Only records visible by then are used.</td></tr>
+    <tr><td><b>Restatement</b></td><td>A published answer that changed because later information arrived.</td></tr>
+    <tr><td><b>Coverage</b></td><td>Share of the scope whose required inputs were present.</td></tr>
+    <tr><td><b>Ontology</b></td><td>The agreed list of business things (part, party, facility, region, order …) and how they relate.</td></tr>
+    <tr><td><b>Identity resolution</b></td><td>Working out that the ERP material number, the MES item code and the WMS SKU for a motor are the same part. The One graph page shows the real codes for each part.</td></tr>
+    <tr><td><b>Quarantine</b></td><td>Records set aside because they cannot be trusted, instead of being silently fixed.</td></tr>
+    <tr><td><b>Metric contract</b></td><td>The written, versioned definition of a metric plus the one SQL function that computes it.</td></tr>
+    <tr><td><b>Evidence envelope</b></td><td>The JSON record behind an answer: inputs, counts, reasons, coverage and sample records.</td></tr>
+    <tr><td><b>Persona</b></td><td>A demo identity whose rules decide what you can see.</td></tr>
+    <tr><td><b>Stream / Task</b></td><td>Snowflake features: a stream tracks new rows, a task runs a procedure when the stream has data.</td></tr>
+    <tr><td><b>Cortex COMPLETE</b></td><td>Snowflake's built-in language model call, used here only for routing and wording.</td></tr>
+    <tr><td><b>Semantic view</b></td><td>A Snowflake object describing tables, dimensions and metrics in business terms.</td></tr>
+    <tr><td><b>Streamlit in Snowflake</b></td><td>Python web apps hosted inside Snowflake, using its security and warehouses.</td></tr>
+  </table>
+</section>
+
+</main>
+</div>
+</body>
+</html>

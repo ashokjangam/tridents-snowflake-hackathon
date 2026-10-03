@@ -1,0 +1,13 @@
+[project]
+name = "concordia"
+version = "1.0.0"
+description = "Governed supply-chain metric contracts for the Concordia reference implementation."
+requires-python = ">=3.10"
+dependencies = ["numpy==2.2.6"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.3,<9"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src", ".", "streamlit"]
+testpaths = ["tests"]

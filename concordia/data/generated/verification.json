@@ -1,0 +1,576 @@
+{
+  "golden": {
+    "checks": 35,
+    "failures": []
+  },
+  "grid": {
+    "checks": 103,
+    "failures": []
+  },
+  "hero": {
+    "checks": 8,
+    "failures": [],
+    "skipped_until_batch2": 0
+  },
+  "ask": {
+    "answers": [
+      {
+        "question": "Why did outbound customer OTD for MM-440 change in May 2026?",
+        "route": "VERIFIED_QUESTION",
+        "status": "COMPLETE",
+        "display": "0.2500",
+        "narration_source": "MODEL",
+        "narration": "Outbound customer OTD for MM-440 changed in May 2026 because the data is synthetic and the metric value decreased from 100.00% to 25.00%. The number of affected commitments increased from 0 to 3. The number of units affected increased from 0 to 30.",
+        "note": null,
+        "seconds": 16.4
+      },
+      {
+        "question": "Compare landed cost for MM-440 at Dayton in May 2026 between 5 June and 15 July",
+        "route": "VERIFIED_QUESTION",
+        "status": "COMPLETE",
+        "display": "12.5000",
+        "narration_source": "TEMPLATE",
+        "narration": "Landed cost per accepted unit for 2026-05-01 to 2026-05-31 is 12.5000 (237500 / 190.000000), as of 2026-07-15T23:59:59Z. As of 2026-06-05T23:59:59Z it was INCOMPLETE. Synthetic data.",
+        "note": "rejected model numbers ['12.50']",
+        "seconds": 16.7
+      },
+      {
+        "question": "How did inbound supplier on-time delivery look at Stuttgart in March 2026?",
+        "route": "MODEL_ROUTED",
+        "status": "COMPLETE",
+        "display": "0.5065",
+        "narration_source": "MODEL",
+        "narration": "Inbound supplier on-time delivery at Stuttgart in March 2026 was 50.65%. This is based on 39 on-time deliveries out of 77 total commitments. The data is synthetic.",
+        "note": null,
+        "seconds": 10.2
+      }
+    ],
+    "passed": true
+  },
+  "security": {
+    "origins": [
+      "evidence:DERIVED_FROM_SYNTHETIC",
+      "raw:SYNTHETIC_CRM",
+      "raw:SYNTHETIC_ERP",
+      "raw:SYNTHETIC_IOT",
+      "raw:SYNTHETIC_MES",
+      "raw:SYNTHETIC_TMS",
+      "raw:SYNTHETIC_WMS",
+      "result:DERIVED_FROM_SYNTHETIC"
+    ],
+    "observed_absent": true,
+    "sim_truth_on_stage": false,
+    "app_owner_denied": {
+      "CORE.PO_LINE": true,
+      "LAND.RAW_RECORD": true,
+      "GOV.EVIDENCE": true,
+      "APP.METRIC_RESULT": true,
+      "APP.V_RESULT_CURRENT": true,
+      "APP.V_RECEIPT_CONTRIBUTION": true
+    },
+    "planner_dashboard_cost": [
+      [
+        "FORBIDDEN",
+        null
+      ]
+    ],
+    "procurement_dashboard_cost_rows": 64,
+    "planner_cost_status": "FORBIDDEN",
+    "executive_cost_status": "COMPLETE",
+    "bare_otd_route": "ALIAS_CLARIFY",
+    "otif_route": "ALIAS_REJECT",
+    "passed": true
+  },
+  "personas": {
+    "semantic_layer_by_role": {
+      "DAYS_INVENTORY": {
+        "identical_across_roles": true,
+        "rows": 2698,
+        "fingerprint": "-8275539376258322292"
+      },
+      "INBOUND_SUPPLIER_OTD": {
+        "identical_across_roles": true,
+        "rows": 10558,
+        "fingerprint": "6162665965068643028"
+      },
+      "LANDED_COST_PER_ACCEPTED_UNIT": {
+        "identical_across_cost_readers": true,
+        "visible_rows_by_role": {
+          "PLANNER": 0,
+          "PROCUREMENT": 6901,
+          "LOGISTICS": 0,
+          "EXECUTIVE": 6901
+        },
+        "masked_for_non_readers": true,
+        "visible_for_readers": true
+      },
+      "OUTBOUND_CUSTOMER_OTD": {
+        "identical_across_roles": true,
+        "rows": 10108,
+        "fingerprint": "-6627535095436292722"
+      },
+      "UNIT_FILL_RATE": {
+        "identical_across_roles": true,
+        "rows": 10122,
+        "fingerprint": "-4022397828476619465"
+      }
+    },
+    "app_dashboard_identical": {
+      "NETWORK": true,
+      "MM-440": true,
+      "CP-1019": true
+    },
+    "same_question_by_persona": {
+      "PLANNER": {
+        "metric_id": "OUTBOUND_CUSTOMER_OTD",
+        "status": "COMPLETE",
+        "numerator": "1",
+        "denominator": "4",
+        "display": "0.2500",
+        "scope": {
+          "geography_id": "GEO-NORTHEAST",
+          "item_id": "MM-440"
+        }
+      },
+      "PROCUREMENT": {
+        "metric_id": "OUTBOUND_CUSTOMER_OTD",
+        "status": "COMPLETE",
+        "numerator": "1",
+        "denominator": "4",
+        "display": "0.2500",
+        "scope": {
+          "geography_id": "GEO-NORTHEAST",
+          "item_id": "MM-440"
+        }
+      },
+      "LOGISTICS": {
+        "metric_id": "OUTBOUND_CUSTOMER_OTD",
+        "status": "COMPLETE",
+        "numerator": "1",
+        "denominator": "4",
+        "display": "0.2500",
+        "scope": {
+          "geography_id": "GEO-NORTHEAST",
+          "item_id": "MM-440"
+        }
+      }
+    },
+    "same_question_identical": true,
+    "hero_by_role": {
+      "PLANNER": {
+        "INBOUND_SUPPLIER_OTD": "0.6667",
+        "LANDED_COST_PER_ACCEPTED_UNIT": null,
+        "OUTBOUND_CUSTOMER_OTD": "0.2500",
+        "UNIT_FILL_RATE": "1.0000"
+      },
+      "PROCUREMENT": {
+        "INBOUND_SUPPLIER_OTD": "0.6667",
+        "LANDED_COST_PER_ACCEPTED_UNIT": "12.5000",
+        "OUTBOUND_CUSTOMER_OTD": "0.2500",
+        "UNIT_FILL_RATE": "1.0000"
+      },
+      "LOGISTICS": {
+        "INBOUND_SUPPLIER_OTD": "0.6667",
+        "LANDED_COST_PER_ACCEPTED_UNIT": null,
+        "OUTBOUND_CUSTOMER_OTD": "0.2500",
+        "UNIT_FILL_RATE": "1.0000"
+      },
+      "EXECUTIVE": {
+        "INBOUND_SUPPLIER_OTD": "0.6667",
+        "LANDED_COST_PER_ACCEPTED_UNIT": "12.5000",
+        "OUTBOUND_CUSTOMER_OTD": "0.2500",
+        "UNIT_FILL_RATE": "1.0000"
+      }
+    },
+    "passed": true
+  },
+  "ontology": {
+    "edge_counts": {
+      "BELONGS_TO_FAMILY": 200,
+      "CONSUMES": 16661,
+      "CONTAINS": 26927,
+      "IN_COUNTRY": 12,
+      "IN_REGION": 32,
+      "PARENT_OF": 5,
+      "SENSES": 10266,
+      "SUBSTITUTES_FOR": 12
+    },
+    "counts": {
+      "IOT_EVENTS": 10266,
+      "LOTS": 26927,
+      "INVENTORY_PARTS": 40,
+      "VERIFIED_QUERIES": 18
+    },
+    "m4_grid_parity": [
+      {
+        "as_of": "2026-06-05 23:59:59+00",
+        "ITEM_ID": "MM-401",
+        "FACILITY_ID": "DC-HAMBURG",
+        "NETWORK": false,
+        "matched": true
+      },
+      {
+        "as_of": "2026-06-05 23:59:59+00",
+        "ITEM_ID": "MM-401",
+        "FACILITY_ID": "DC-OAKLAND",
+        "NETWORK": false,
+        "matched": true
+      },
+      {
+        "as_of": "2026-06-05 23:59:59+00",
+        "ITEM_ID": "MM-401",
+        "FACILITY_ID": "FAC-DAYTON",
+        "NETWORK": false,
+        "matched": true
+      },
+      {
+        "as_of": "2026-06-05 23:59:59+00",
+        "ITEM_ID": "MM-401",
+        "FACILITY_ID": null,
+        "NETWORK": true,
+        "matched": true
+      },
+      {
+        "as_of": "2026-06-05 23:59:59+00",
+        "ITEM_ID": "MM-402",
+        "FACILITY_ID": null,
+        "NETWORK": true,
+        "matched": true
+      },
+      {
+        "as_of": "2026-06-05 23:59:59+00",
+        "ITEM_ID": "MM-403",
+        "FACILITY_ID": null,
+        "NETWORK": true,
+        "matched": true
+      },
+      {
+        "as_of": "2026-07-15 23:59:59+00",
+        "ITEM_ID": "MM-401",
+        "FACILITY_ID": "DC-HAMBURG",
+        "NETWORK": false,
+        "matched": true
+      },
+      {
+        "as_of": "2026-07-15 23:59:59+00",
+        "ITEM_ID": "MM-401",
+        "FACILITY_ID": "DC-OAKLAND",
+        "NETWORK": false,
+        "matched": true
+      },
+      {
+        "as_of": "2026-07-15 23:59:59+00",
+        "ITEM_ID": "MM-401",
+        "FACILITY_ID": "FAC-DAYTON",
+        "NETWORK": false,
+        "matched": true
+      },
+      {
+        "as_of": "2026-07-15 23:59:59+00",
+        "ITEM_ID": "MM-401",
+        "FACILITY_ID": null,
+        "NETWORK": true,
+        "matched": true
+      },
+      {
+        "as_of": "2026-07-15 23:59:59+00",
+        "ITEM_ID": "MM-402",
+        "FACILITY_ID": null,
+        "NETWORK": true,
+        "matched": true
+      },
+      {
+        "as_of": "2026-07-15 23:59:59+00",
+        "ITEM_ID": "MM-403",
+        "FACILITY_ID": null,
+        "NETWORK": true,
+        "matched": true
+      }
+    ],
+    "semantic_questions": [
+      {
+        "question": "Compare landed cost for MM-440 at Dayton in May 2026 between 5 June and 15 July",
+        "verdict": "VERIFIED",
+        "rows": 2,
+        "columns": [
+          "LANDED_COST_PER_UNIT",
+          "METRIC_ID",
+          "MONTH",
+          "SCOPE_LEVEL",
+          "KNOWN_AS_OF",
+          "STATUS",
+          "GOVERNED_VALUE_TEXT",
+          "REASONS",
+          "PART_ID",
+          "SITE_NAME"
+        ]
+      },
+      {
+        "question": "Compare supplier on-time delivery, customer on-time delivery and fill rate for MM-440 in May 2026",
+        "verdict": "VERIFIED",
+        "rows": 3,
+        "columns": [
+          "GOVERNED_VALUE",
+          "METRIC_ID",
+          "MONTH",
+          "SCOPE_LEVEL",
+          "KNOWN_AS_OF",
+          "STATUS",
+          "GOVERNED_VALUE_TEXT",
+          "PART_ID"
+        ]
+      },
+      {
+        "question": "Customer on-time delivery by region for May 2026",
+        "verdict": "VERIFIED",
+        "rows": 6,
+        "columns": [
+          "CUSTOMER_ON_TIME_DELIVERY",
+          "METRIC_ID",
+          "MONTH",
+          "SCOPE_LEVEL",
+          "KNOWN_AS_OF",
+          "STATUS",
+          "GOVERNED_VALUE_TEXT",
+          "REGION_NAME"
+        ]
+      },
+      {
+        "question": "Days inventory of MM-440 finished goods at Dayton",
+        "verdict": "VERIFIED",
+        "rows": 1,
+        "columns": [
+          "DAYS_OF_INVENTORY",
+          "METRIC_ID",
+          "MONTH",
+          "SCOPE_LEVEL",
+          "KNOWN_AS_OF",
+          "STATUS",
+          "GOVERNED_VALUE_TEXT",
+          "PART_ID",
+          "SITE_NAME"
+        ]
+      },
+      {
+        "question": "Inbound supplier OTD for MM-440 at Dayton in May 2026",
+        "verdict": "VERIFIED",
+        "rows": 1,
+        "columns": [
+          "SUPPLIER_ON_TIME_DELIVERY",
+          "METRIC_ID",
+          "MONTH",
+          "SCOPE_LEVEL",
+          "KNOWN_AS_OF",
+          "STATUS",
+          "GOVERNED_VALUE_TEXT",
+          "PART_ID",
+          "SITE_NAME"
+        ]
+      },
+      {
+        "question": "Inbound supplier OTD trend for Dayton",
+        "verdict": "VERIFIED",
+        "rows": 18,
+        "columns": [
+          "SUPPLIER_ON_TIME_DELIVERY",
+          "METRIC_ID",
+          "MONTH",
+          "SCOPE_LEVEL",
+          "KNOWN_AS_OF",
+          "STATUS",
+          "GOVERNED_VALUE_TEXT",
+          "SITE_NAME"
+        ]
+      },
+      {
+        "question": "Landed cost for MM-440 at Dayton in May 2026 as known on 5 June",
+        "verdict": "VERIFIED",
+        "rows": 1,
+        "columns": [
+          "LANDED_COST_PER_UNIT",
+          "METRIC_ID",
+          "MONTH",
+          "SCOPE_LEVEL",
+          "KNOWN_AS_OF",
+          "STATUS",
+          "GOVERNED_VALUE_TEXT",
+          "REASONS",
+          "PART_ID",
+          "SITE_NAME"
+        ]
+      },
+      {
+        "question": "Landed cost per accepted unit for MM-440 at Dayton in May 2026",
+        "verdict": "VERIFIED",
+        "rows": 1,
+        "columns": [
+          "LANDED_COST_PER_UNIT",
+          "METRIC_ID",
+          "MONTH",
+          "SCOPE_LEVEL",
+          "KNOWN_AS_OF",
+          "STATUS",
+          "GOVERNED_VALUE_TEXT",
+          "PART_ID",
+          "SITE_NAME"
+        ]
+      },
+      {
+        "question": "Landed cost per accepted unit for MM-440 at Dayton in May 2026, early and final",
+        "verdict": "VERIFIED",
+        "rows": 2,
+        "columns": [
+          "LANDED_COST_PER_UNIT",
+          "METRIC_ID",
+          "MONTH",
+          "SCOPE_LEVEL",
+          "KNOWN_AS_OF",
+          "STATUS",
+          "GOVERNED_VALUE_TEXT",
+          "REASONS",
+          "PART_ID",
+          "SITE_NAME"
+        ]
+      },
+      {
+        "question": "Network days inventory for MM-440 finished goods",
+        "verdict": "VERIFIED",
+        "rows": 1,
+        "columns": [
+          "DAYS_OF_INVENTORY",
+          "METRIC_ID",
+          "MONTH",
+          "SCOPE_LEVEL",
+          "KNOWN_AS_OF",
+          "STATUS",
+          "GOVERNED_VALUE_TEXT",
+          "PART_ID"
+        ]
+      },
+      {
+        "question": "Outbound customer OTD by region for May 2026",
+        "verdict": "VERIFIED",
+        "rows": 6,
+        "columns": [
+          "CUSTOMER_ON_TIME_DELIVERY",
+          "METRIC_ID",
+          "MONTH",
+          "SCOPE_LEVEL",
+          "KNOWN_AS_OF",
+          "STATUS",
+          "GOVERNED_VALUE_TEXT",
+          "REGION_NAME"
+        ]
+      },
+      {
+        "question": "Outbound customer OTD for MM-440 in the Northeast in May 2026",
+        "verdict": "VERIFIED",
+        "rows": 1,
+        "columns": [
+          "CUSTOMER_ON_TIME_DELIVERY",
+          "METRIC_ID",
+          "MONTH",
+          "SCOPE_LEVEL",
+          "KNOWN_AS_OF",
+          "STATUS",
+          "GOVERNED_VALUE_TEXT",
+          "PART_ID",
+          "REGION_NAME"
+        ]
+      },
+      {
+        "question": "Show IoT dock events and lots for MM-440 at Dayton",
+        "verdict": "DESCRIPTIVE",
+        "rows": 161,
+        "columns": [
+          "IOT_EVENT_ID",
+          "SENSOR_ID",
+          "SENSOR_EVENT_TYPE",
+          "SENSOR_EVENT_TIME",
+          "TRUCK_ID",
+          "LOT_ID",
+          "ITEM_ID",
+          "FACILITY_NAME",
+          "TEMPERATURE_C"
+        ]
+      },
+      {
+        "question": "Show the product-level supplier, component, home plant, customer and region paths for motor MM-401",
+        "verdict": "DESCRIPTIVE",
+        "rows": 49,
+        "columns": [
+          "SUPPLIER_NAME",
+          "COMPONENT_ID",
+          "COMPONENT_NAME",
+          "MOTOR_ID",
+          "PLANT_NAME",
+          "CUSTOMER_NAME",
+          "REGION_NAME",
+          "BOM_LEVEL"
+        ]
+      },
+      {
+        "question": "Unit fill rate by region for May 2026",
+        "verdict": "VERIFIED",
+        "rows": 6,
+        "columns": [
+          "UNIT_FILL_RATE",
+          "METRIC_ID",
+          "MONTH",
+          "SCOPE_LEVEL",
+          "KNOWN_AS_OF",
+          "STATUS",
+          "GOVERNED_VALUE_TEXT",
+          "REGION_NAME"
+        ]
+      },
+      {
+        "question": "Unit fill rate for MM-440 in May 2026",
+        "verdict": "VERIFIED",
+        "rows": 1,
+        "columns": [
+          "UNIT_FILL_RATE",
+          "METRIC_ID",
+          "MONTH",
+          "SCOPE_LEVEL",
+          "KNOWN_AS_OF",
+          "STATUS",
+          "GOVERNED_VALUE_TEXT",
+          "PART_ID"
+        ]
+      },
+      {
+        "question": "Which suppliers feed motor MM-401, and through which components?",
+        "verdict": "DESCRIPTIVE",
+        "rows": 7,
+        "columns": [
+          "SUPPLIER_NAME",
+          "VIA_COMPONENT_ID",
+          "PART_NAME",
+          "BOM_LEVEL"
+        ]
+      },
+      {
+        "question": "Why did outbound customer OTD for MM-440 change in May 2026?",
+        "verdict": "VERIFIED",
+        "rows": 2,
+        "columns": [
+          "CUSTOMER_ON_TIME_DELIVERY",
+          "METRIC_ID",
+          "MONTH",
+          "SCOPE_LEVEL",
+          "KNOWN_AS_OF",
+          "STATUS",
+          "GOVERNED_VALUE_TEXT",
+          "PART_ID",
+          "REGION_NAME"
+        ]
+      }
+    ],
+    "planner_landed_cost": {
+      "verdict": "WITHHELD",
+      "rows_returned": 0
+    },
+    "passed": true
+  }
+}

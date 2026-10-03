@@ -1,0 +1,18 @@
+-- Metric contract registry, version 1.0.0.
+-- Do not execute until deploy is explicitly approved.
+-- This script records identity and grain. It does not calculate a metric.
+
+-- CREATE TABLE IF NOT EXISTS CONCORDIA.GOV.METRIC_CONTRACT (
+--   METRIC_ID VARCHAR NOT NULL,
+--   METRIC_VERSION VARCHAR NOT NULL,
+--   GRAIN VARCHAR NOT NULL,
+--   STATUS VARCHAR NOT NULL,
+--   PRIMARY KEY (METRIC_ID, METRIC_VERSION)
+-- );
+--
+-- MERGE published rows:
+--   INBOUND_SUPPLIER_OTD, 1.0.0, purchase_order_schedule_line
+--   OUTBOUND_CUSTOMER_OTD, 1.0.0, sales_order_line
+--   UNIT_FILL_RATE, 1.0.0, sales_order_line
+--   DAYS_INVENTORY, 1.0.0, facility_item_as_of
+--   LANDED_COST_PER_ACCEPTED_UNIT, 1.0.0, accepted_receipt

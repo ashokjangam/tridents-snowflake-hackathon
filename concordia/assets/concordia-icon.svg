@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">Concordia triadic alignment symbol</title>
+  <desc id="desc">Three distinct enterprise pathways resolve into a central open truth aperture.</desc>
+  <!-- Flat vector. Transparent background. No gradients, glow, or background panel. -->
+  <g fill="none" stroke-linecap="square" stroke-linejoin="miter">
+    <!-- quiet navigation frame -->
+    <path d="M512 102V162M512 862V922M102 512H162M862 512H922" stroke="#9DB2C8" stroke-width="12" opacity=".8"/>
+    <circle cx="512" cy="512" r="354" stroke="#D7E1EB" stroke-width="7"/>
+
+    <!-- Planning: north pathway -->
+    <path d="M512 172V354L442 424" stroke="#1746A2" stroke-width="42"/>
+    <path d="M512 172V354L442 424" stroke="#F4F8FC" stroke-width="7" opacity=".85"/>
+    <circle cx="512" cy="172" r="22" fill="#1746A2" stroke="#F4F8FC" stroke-width="6"/>
+
+    <!-- Procurement: southwest pathway -->
+    <path d="M216 683L374 592L444 522" stroke="#00A6A6" stroke-width="42"/>
+    <path d="M216 683L374 592L444 522" stroke="#F4F8FC" stroke-width="7" opacity=".85"/>
+    <circle cx="216" cy="683" r="22" fill="#00A6A6" stroke="#F4F8FC" stroke-width="6"/>
+
+    <!-- Logistics: southeast pathway -->
+    <path d="M808 683L650 592L580 522" stroke="#2F6FED" stroke-width="42"/>
+    <path d="M808 683L650 592L580 522" stroke="#F4F8FC" stroke-width="7" opacity=".85"/>
+    <circle cx="808" cy="683" r="22" fill="#2F6FED" stroke="#F4F8FC" stroke-width="6"/>
+
+    <!-- trusted truth aperture: precise negative-space diamond -->
+    <path d="M512 389L635 512L512 635L389 512Z" fill="#FFFFFF" stroke="#102A43" stroke-width="16"/>
+    <path d="M512 426L598 512L512 598L426 512Z" stroke="#18B8AE" stroke-width="7"/>
+    <circle cx="512" cy="512" r="17" fill="#102A43" stroke="none"/>
+
+    <!-- output: shared answer leaving the governed core -->
+    <path d="M635 512H802" stroke="#102A43" stroke-width="16"/>
+    <path d="M635 512H802" stroke="#9DB2C8" stroke-width="4"/>
+    <circle cx="802" cy="512" r="14" fill="#102A43" stroke="#F4F8FC" stroke-width="5"/>
+  </g>
+</svg>
