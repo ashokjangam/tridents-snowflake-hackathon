@@ -246,7 +246,7 @@ SELECT column1, column2, column3, PARSE_JSON(column4)::OBJECT, column5::DATE, co
  ('VQ-10','Inbound supplier OTD trend for Dayton','INBOUND_SUPPLIER_OTD','{"facility_id":"FAC-DAYTON"}','2025-01-01','2026-06-30','final',NULL,'trend'),
  ('VQ-11','Network days inventory for MM-440 finished goods','DAYS_INVENTORY','{"item_id":"MM-440","inventory_class":"FINISHED_GOODS","network":true}','2026-07-01','2026-07-31','final',NULL,'value'),
  ('VQ-12','Unit fill rate by region for May 2026','UNIT_FILL_RATE','{}','2026-05-01','2026-05-31','final',NULL,'breakdown'),
- ('VQ-13','Compare supplier on-time delivery, customer on-time delivery and fill rate for MM-440 in May 2026',NULL,'{"item_id":"MM-440"}','2026-05-01','2026-05-31','final',NULL,'compare'),
+ ('VQ-13','Compare supplier on-time delivery, customer on-time delivery and unit fill rate for MM-440 in May 2026',NULL,'{"item_id":"MM-440"}','2026-05-01','2026-05-31','final',NULL,'compare'),
  ('VQ-14','Which suppliers feed motor MM-401, and through which components?',NULL,'{"item_id":"MM-401"}',NULL,NULL,NULL,NULL,'relationship'),
  ('VQ-15','Show the product-level supplier, component, home plant, customer and region paths for motor MM-401',NULL,'{"item_id":"MM-401"}',NULL,NULL,NULL,NULL,'relationship'),
  ('VQ-16','Show IoT dock events and lots for MM-440 at Dayton',NULL,'{"item_id":"MM-440","facility_id":"FAC-DAYTON"}',NULL,NULL,NULL,NULL,'telemetry'),

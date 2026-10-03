@@ -105,3 +105,20 @@ def test_logistics_role_sees_only_entitled_sites():
         network = rows(c, "SELECT COUNT(*) AS N FROM CONCORDIA.APP.SV_RESULT WHERE FACILITY_ID IS NULL")[0]["N"]
     assert sites and sites <= {"FAC-DAYTON", "FAC-RENO", "DC-NEWARK", "DC-OAKLAND"}
     assert network > 0
+
+
+@pytest.mark.parametrize("persona,status,value", [("PLANNER", "WITHHELD", None), ("PROCUREMENT", "COMPLETE", 12.5)])
+def test_semantic_landed_cost_is_withheld_not_complete_without_cost_access(persona, status, value):
+    sys.path.insert(0, str(ROOT / "scripts"))
+    from sf import connect, rows
+
+    with connect(role=f"CONCORDIA_{persona}", warehouse="CONCORDIA_APP_WH") as conn:
+        c = conn.cursor()
+        c.execute("USE SECONDARY ROLES NONE")
+        found = rows(c, """SELECT * FROM SEMANTIC_VIEW(CONCORDIA.APP.SUPPLY_CHAIN_ONTOLOGY
+                             METRICS landed_cost_per_unit DIMENSIONS results.status
+                             WHERE results.metric_id = 'LANDED_COST_PER_ACCEPTED_UNIT' AND results.scope_level = 'PART_SITE'
+                               AND results.known_as_of = 'final' AND results.month = '2026-05-01'
+                               AND parts.part_id = 'MM-440' AND sites.site_name = 'Dayton')""")[0]
+    assert found["STATUS"] == status
+    assert (None if found["LANDED_COST_PER_UNIT"] is None else float(found["LANDED_COST_PER_UNIT"])) == value

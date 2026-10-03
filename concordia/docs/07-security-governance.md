@@ -78,7 +78,8 @@ the selected persona for the conditional cost masking policy.
   `ASK_METRIC` apply the same rule and return `FORBIDDEN` with
   `SITE_NOT_ENTITLED`.
 - Conditional masking policies protect landed-cost result columns and cost
-  document amounts.
+  document amounts. A persona without cost access reads the landed-cost status
+  as `WITHHELD`, not `COMPLETE`, so a blank never passes for a finished answer.
 - `scripts/verify.py personas` logs in as each persona role, checks that
   Logistics reads no other-site rows while the others do, checks that answers
   every role may see are identical, and stores the per-role result in
