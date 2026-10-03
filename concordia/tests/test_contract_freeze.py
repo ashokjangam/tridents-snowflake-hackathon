@@ -106,9 +106,22 @@ def test_semantic_runner_and_verified_question_regressions():
         row = next(line for line in gov.splitlines() if f"('{question_id}'" in line)
         assert "'2026-07-01','2026-07-31','final'" in row
 
-    product_path = "Show the product-level supplier, component, home plant, customer and region paths for motor MM-401"
-    assert product_path in semantic_sql
-    assert product_path in app
+    import re
+    import sys
+
+    sys.path.insert(0, str(root / "scripts"))
+    from catalog import verified_queries
+
+    catalog = dict(re.findall(r"^ \('(VQ-\d\d)','((?:[^']|'')*)'", gov, flags=re.M))
+    mirrored = {qid: question for qid, question, _ in verified_queries(semantic_sql)}
+    assert len(catalog) == 21 and mirrored == catalog
+    assert "FROM CONCORDIA.APP.V_VERIFIED_QUESTION" in app and "Landed cost per accepted unit for MM-440 at Dayton in May 2026, early" not in app
+    semantic_view = semantic_sql.split("CREATE OR REPLACE SEMANTIC VIEW", 1)[1].split("AI_SQL_GENERATION", 1)[0]
+    governed = re.findall(r"results\.(\w+) AS (.+)", semantic_view.split("METRICS (", 1)[1])
+    for name in ("supplier_on_time_delivery", "customer_on_time_delivery", "unit_fill_rate", "days_of_inventory",
+                 "landed_cost_per_unit", "governed_value"):
+        expression = next(expr for metric, expr in governed if metric == name)
+        assert expression.startswith("IFF(COUNT(results.") and "= 1, MAX(results." in expression
 
     audit = app.split("def audit_semantic", 1)[1].split("def verified_fallback", 1)[0]
     assert "inline_nulls(" in audit

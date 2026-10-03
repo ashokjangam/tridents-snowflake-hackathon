@@ -47,7 +47,7 @@ faithfulness.
 
 ### 5. UX/security
 
-- network-wide persona access (facility restrictions are not implemented);
+- site entitlement: Logistics reads no rows for Stuttgart or Hamburg, other personas do (`verify.py personas`);
 - landed-cost masking;
 - accessibility;
 - stale/partial/error states;

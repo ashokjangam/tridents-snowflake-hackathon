@@ -165,23 +165,42 @@ COST = "LANDED_COST_PER_ACCEPTED_UNIT"
 
 
 def personas(cur) -> dict:
-    """Each persona role reads the semantic layer itself; governed answers must be identical, cost masked by policy."""
-    fingerprint_sql = """SELECT METRIC_ID, COUNT(*) AS N, COUNT_IF(VALUE_NUM IS NOT NULL OR DISPLAY IS NOT NULL) AS VISIBLE,
-                                TO_VARCHAR(HASH_AGG(RESULT_KEY, STATUS, DISPLAY, NUMERATOR, DENOMINATOR, VALUE_NUM)) AS FINGERPRINT
-                         FROM CONCORDIA.APP.SV_RESULT GROUP BY METRIC_ID ORDER BY METRIC_ID"""
+    """Each persona role reads the semantic layer itself. On the rows every persona may see, governed answers must be
+    identical; cost is masked by policy; Logistics (Americas sites only) sees no rows for other sites."""
+    entitled = {r["PERSONA"]: json.loads(r["ALLOWED_FACILITIES"]) for r in rows(cur, "SELECT PERSONA, ALLOWED_FACILITIES FROM GOV.ENTITLEMENT")}
+    all_sites = [r["FACILITY_ID"] for r in rows(cur, "SELECT FACILITY_ID FROM GOV.FACILITY ORDER BY 1")]
+    shared = [s for s in all_sites if all("*" in entitled[p] or s in entitled[p] for p in PERSONA_ROLES)]
+    in_shared = "(FACILITY_ID IS NULL OR FACILITY_ID IN (" + ", ".join(f"'{s}'" for s in shared) + "))"
+    fingerprint_sql = f"""WITH x AS (SELECT r.*, {in_shared} AS SHARED FROM CONCORDIA.APP.SV_RESULT r),
+                          f AS (SELECT METRIC_ID, TO_VARCHAR(HASH_AGG(RESULT_KEY, STATUS, DISPLAY, NUMERATOR, DENOMINATOR, VALUE_NUM)) AS FP
+                                FROM x WHERE SHARED GROUP BY METRIC_ID)
+                          SELECT x.METRIC_ID, COUNT_IF(SHARED) AS N, COUNT_IF(SHARED AND (VALUE_NUM IS NOT NULL OR DISPLAY IS NOT NULL)) AS VISIBLE,
+                                 COUNT_IF(NOT SHARED) AS OTHER_SITE_ROWS, ANY_VALUE(f.FP) AS FINGERPRINT
+                          FROM x LEFT JOIN f ON f.METRIC_ID = x.METRIC_ID GROUP BY x.METRIC_ID ORDER BY x.METRIC_ID"""
+    record_sql = f"""SELECT 'SV_LINE_OUTCOME' AS T, COUNT_IF(NOT {in_shared}) AS N FROM CONCORDIA.APP.SV_LINE_OUTCOME
+                     UNION ALL SELECT 'SV_SO_LINE', COUNT_IF(NOT {in_shared}) FROM CONCORDIA.APP.SV_SO_LINE
+                     UNION ALL SELECT 'SV_RECEIPT', COUNT_IF(NOT {in_shared}) FROM CONCORDIA.APP.SV_RECEIPT"""
     semantic_sql = """SELECT * FROM SEMANTIC_VIEW(CONCORDIA.APP.SUPPLY_CHAIN_ONTOLOGY
                         METRICS results.supplier_on_time_delivery, results.customer_on_time_delivery, results.unit_fill_rate,
                                 results.landed_cost_per_unit
                         DIMENSIONS results.metric_id, results.governed_value_text
                         WHERE results.scope_level = 'PART_SITE' AND results.known_as_of = 'final' AND results.month = '2026-05-01'
                           AND parts.part_id = 'MM-440' AND sites.site_id = 'FAC-DAYTON') ORDER BY metric_id"""
-    by_role, hero = {}, {}
+    by_role, hero, records = {}, {}, {}
     for persona in PERSONA_ROLES:
         with connect(role=f"CONCORDIA_{persona}", warehouse="CONCORDIA_APP_WH") as conn:
             c = conn.cursor()
             c.execute("USE SECONDARY ROLES NONE")
             by_role[persona] = {r["METRIC_ID"]: r for r in rows(c, fingerprint_sql)}
             hero[persona] = {r["METRIC_ID"]: r["GOVERNED_VALUE_TEXT"] for r in rows(c, semantic_sql)}
+            records[persona] = {r["T"]: r["N"] for r in rows(c, record_sql)}
+    restricted = [p for p in PERSONA_ROLES if "*" not in entitled[p]]
+    site_rule = {p: {"other_site_results": sum(m["OTHER_SITE_ROWS"] for m in by_role[p].values()), "other_site_records": records[p]}
+                 for p in PERSONA_ROLES}
+    site_ok = bool(restricted) and all(
+        (site_rule[p]["other_site_results"] == 0 and not any(records[p].values())) if p in restricted
+        else (site_rule[p]["other_site_results"] > 0 and all(records[p].values()))
+        for p in PERSONA_ROLES)
     metrics = sorted(by_role["PLANNER"])
     checks = {}
     for metric in metrics:
@@ -215,13 +234,31 @@ def personas(cur) -> dict:
             "denominator": env.get("denominator"), "display": env.get("display"), "scope": env.get("scope"),
         }
     same_question_identical = len({json.dumps(value, sort_keys=True) for value in same_question.values()}) == 1
+    site_sql = """SELECT COUNT(*) AS N, COUNT_IF(STATUS = 'FORBIDDEN' AND ARRAY_CONTAINS('SITE_NOT_ENTITLED'::VARIANT, REASONS)) AS BLOCKED
+                  FROM TABLE(CONCORDIA.APP.RESULTS_FOR(%s, NULL::VARCHAR, 'FAC-STUTTGART', NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR))"""
+    app_site = {p: rows(cur, site_sql, (p,))[0] for p in PERSONA_ROLES}
+    app_site_ok = all((app_site[p]["BLOCKED"] == app_site[p]["N"] > 0) if p in restricted else (app_site[p]["BLOCKED"] == 0 < app_site[p]["N"])
+                      for p in PERSONA_ROLES)
+    stuttgart = json.loads(rows(cur, "CALL CONCORDIA.APP.ASK('LOGISTICS', 'Inbound supplier OTD at Stuttgart in May 2026')")[0]["ASK"])
+    stuttgart_env = stuttgart.get("envelope") or {}
+    ask_site_ok = stuttgart_env.get("status") == "FORBIDDEN" and "SITE_NOT_ENTITLED" in (stuttgart_env.get("reasons") or [])
     cur.execute("USE ROLE CONCORDIA_ADMIN")
     cur.execute("USE SECONDARY ROLES ALL")
     cur.execute("USE WAREHOUSE CONCORDIA_WH")
     passed = (all(v.get("identical_across_roles", True) for v in checks.values())
               and checks.get(COST, {}).get("masked_for_non_readers") and checks.get(COST, {}).get("visible_for_readers")
-              and checks.get(COST, {}).get("identical_across_cost_readers") and all(app.values()) and same_question_identical)
-    return {"semantic_layer_by_role": checks, "app_dashboard_identical": app, "same_question_by_persona": same_question,
+              and checks.get(COST, {}).get("identical_across_cost_readers") and all(app.values()) and same_question_identical
+              and site_ok and app_site_ok and ask_site_ok)
+    checked_at = rows(cur, "SELECT CURRENT_TIMESTAMP()::TIMESTAMP_TZ AS T")[0]["T"]
+    for persona in PERSONA_ROLES:
+        for metric, found in by_role[persona].items():
+            cur.execute("""INSERT INTO GOV.PERSONA_CHECK SELECT %s, %s, %s, %s, %s, %s, %s, %s, %s, %s""",
+                        (checked_at, persona, f"CONCORDIA_{persona}", metric, found["N"], found["VISIBLE"], found["OTHER_SITE_ROWS"],
+                         found["FINGERPRINT"], found["FINGERPRINT"] == by_role["PLANNER"][metric]["FINGERPRINT"], bool(passed)))
+    return {"shared_sites": shared, "semantic_layer_by_role": checks, "site_entitlement": site_rule, "site_entitlement_ok": site_ok,
+            "app_stuttgart_rows": app_site, "app_site_ok": app_site_ok,
+            "logistics_stuttgart_ask": {"status": stuttgart_env.get("status"), "reasons": stuttgart_env.get("reasons")},
+            "app_dashboard_identical": app, "same_question_by_persona": same_question,
             "same_question_identical": same_question_identical, "hero_by_role": hero, "passed": bool(passed)}
 
 
@@ -229,14 +266,31 @@ def ontology(cur) -> dict:
     """Prove that advertised ontology relationships, IoT, lots and primary semantic questions exist and execute."""
     edge_rows = rows(cur, """SELECT EDGE_TYPE, COUNT(*) AS N FROM CORE.KG_EDGE
                              WHERE EDGE_TYPE IN ('SUBSTITUTES_FOR','CONSUMES','PARENT_OF','BELONGS_TO_FAMILY',
-                                                 'IN_COUNTRY','IN_REGION','CONTAINS','SENSES')
+                                                 'IN_COUNTRY','IN_REGION','CONTAINS','SENSES','ALLOCATED_TO')
                              GROUP BY EDGE_TYPE ORDER BY EDGE_TYPE""")
     edges = {r["EDGE_TYPE"]: r["N"] for r in edge_rows}
     counts = rows(cur, """SELECT
       (SELECT COUNT(*) FROM CORE.IOT_EVENT) AS IOT_EVENTS,
       (SELECT COUNT(DISTINCT LOT_ID) FROM CORE.LOT_TRACE) AS LOTS,
       (SELECT COUNT(DISTINCT ITEM_ID) FROM APP.SV_RESULT WHERE METRIC_ID = 'DAYS_INVENTORY') AS INVENTORY_PARTS,
-      (SELECT COUNT(*) FROM APP.ANALYST_VERIFIED) AS VERIFIED_QUERIES""")[0]
+      (SELECT COUNT(*) FROM APP.ANALYST_VERIFIED) AS VERIFIED_QUERIES,
+      (SELECT COUNT(*) FROM GOV.VERIFIED_QUESTION WHERE ANALYST_SQL IS NULL) AS CATALOG_WITHOUT_SQL""")[0]
+    unpinned = rows(cur, """SELECT * FROM SEMANTIC_VIEW(CONCORDIA.APP.SUPPLY_CHAIN_ONTOLOGY
+                              METRICS results.days_of_inventory, results.governed_answer_count)""")[0]
+    lines = rows(cur, """SELECT * FROM SEMANTIC_VIEW(CONCORDIA.APP.SUPPLY_CHAIN_ONTOLOGY
+                           METRICS line_outcomes.counted_lines, line_outcomes.on_time_lines, line_outcomes.missed_lines
+                           WHERE line_outcomes.metric_id = 'OUTBOUND_CUSTOMER_OTD' AND line_outcomes.known_as_of = 'final'
+                             AND line_outcomes.month = '2026-05-01' AND parts.part_id = 'MM-440' AND regions.region_id = 'GEO-NORTHEAST')""")[0]
+    published = rows(cur, """SELECT NUMERATOR, DENOMINATOR FROM APP.SV_RESULT WHERE METRIC_ID = 'OUTBOUND_CUSTOMER_OTD' AND AS_OF_KIND = 'final'
+                               AND PERIOD_START = '2026-05-01' AND SCOPE_LEVEL = 'PART_REGION' AND ITEM_ID = 'MM-440'
+                               AND GEOGRAPHY_ID = 'GEO-NORTHEAST'""")[0]
+    line_parity = {"on_time_lines": int(lines["ON_TIME_LINES"]), "counted_lines": int(lines["COUNTED_LINES"]),
+                   "missed_lines": int(lines["MISSED_LINES"]), "published_numerator": published["NUMERATOR"],
+                   "published_denominator": published["DENOMINATOR"]}
+    line_parity["matched"] = (str(line_parity["on_time_lines"]) == str(published["NUMERATOR"])
+                              and str(line_parity["counted_lines"]) == str(published["DENOMINATOR"]))
+    single_row = {"unfiltered_days_of_inventory": unpinned["DAYS_OF_INVENTORY"], "answers_matched": unpinned["GOVERNED_ANSWER_COUNT"],
+                  "null_when_not_one_answer": unpinned["DAYS_OF_INVENTORY"] is None and unpinned["GOVERNED_ANSWER_COUNT"] > 1}
     scopes = rows(cur, """SELECT ITEM_ID, FACILITY_ID, NETWORK
                           FROM TABLE(CORE.M4_GRID('MERIDIAN', '2026-07-15 23:59:59+00'::TIMESTAMP_TZ, 'FINISHED_GOODS'))
                           QUALIFY ROW_NUMBER() OVER (PARTITION BY NETWORK ORDER BY ITEM_ID, FACILITY_ID) <= 3""")
@@ -271,22 +325,25 @@ def ontology(cur) -> dict:
         executions.append({"question": item["QUESTION"], "verdict": result.get("verdict"), "rows": result.get("row_count"),
                            "columns": result.get("columns")})
     cost_sql = next(item["SQL_TEXT"] for item in approved
-                    if item["QUESTION"] == "Landed cost per accepted unit for MM-440 at Dayton in May 2026, early and final")
+                    if item["QUESTION"] == "Compare landed cost for MM-440 at Dayton in May 2026 between 5 June and 15 July")
     masked_cost = json.loads(rows(cur, "CALL CONCORDIA.APP.RUN_SEMANTIC_SQL('PLANNER', %s)", (cost_sql,))[0]["RUN_SEMANTIC_SQL"])
     comparison = next(item for item in executions if item["question"].startswith("Compare supplier on-time delivery"))
     cur.execute("USE ROLE CONCORDIA_ADMIN")
     cur.execute("USE SECONDARY ROLES ALL")
     cur.execute("USE WAREHOUSE CONCORDIA_WH")
-    expected_edges = {"SUBSTITUTES_FOR", "CONSUMES", "PARENT_OF", "BELONGS_TO_FAMILY", "IN_COUNTRY", "IN_REGION", "CONTAINS", "SENSES"}
+    expected_edges = {"SUBSTITUTES_FOR", "CONSUMES", "PARENT_OF", "BELONGS_TO_FAMILY", "IN_COUNTRY", "IN_REGION", "CONTAINS", "SENSES",
+                      "ALLOCATED_TO"}
     passed = (expected_edges <= {name for name, count in edges.items() if count > 0}
               and counts["IOT_EVENTS"] > 0 and counts["LOTS"] > 0 and counts["INVENTORY_PARTS"] >= 40
-              and counts["VERIFIED_QUERIES"] >= 15 and len(executions) == counts["VERIFIED_QUERIES"]
+              and counts["VERIFIED_QUERIES"] >= 21 and counts["CATALOG_WITHOUT_SQL"] == 0
+              and len(executions) == counts["VERIFIED_QUERIES"]
+              and single_row["null_when_not_one_answer"] and line_parity["matched"]
               and len(m4_parity) >= 8 and all(item["matched"] for item in m4_parity)
               and masked_cost.get("verdict") == "WITHHELD" and not masked_cost.get("rows")
               and "GOVERNED_VALUE" in (comparison.get("columns") or [])
               and all(item["verdict"] in ("VERIFIED", "DESCRIPTIVE") and item["rows"] > 0 for item in executions))
-    return {"edge_counts": edges, "counts": counts, "m4_grid_parity": m4_parity,
-            "semantic_questions": executions,
+    return {"edge_counts": edges, "counts": counts, "m4_grid_parity": m4_parity, "single_row_rule": single_row,
+            "line_outcomes_match_published": line_parity, "semantic_questions": executions,
             "planner_landed_cost": {"verdict": masked_cost.get("verdict"), "rows_returned": len(masked_cost.get("rows") or [])},
             "passed": bool(passed)}
 

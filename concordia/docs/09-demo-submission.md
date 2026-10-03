@@ -157,7 +157,9 @@ What it does not prove: adoption or outcomes at a real manufacturer.
 - constrained Cortex use;
 - evidence envelopes;
 - late-data replay;
-- cost masking controls (no facility row-access policy is claimed);
+- cost masking and site row-access policies, proven by logging in as each
+  persona role (in the app the persona is picked from a list, so the app
+  demonstrates the rule rather than enforcing it per login);
 - golden/metamorphic/persona/adversarial tests;
 - local preview and native deployment.
 

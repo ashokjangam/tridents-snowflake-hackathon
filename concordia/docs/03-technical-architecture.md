@@ -248,7 +248,21 @@ requests cannot reach Analyst until resolved.
 The deployed semantic view publishes governed result rows, parts, sites,
 regions, suppliers, customers, metric contracts, supply links, BOM links,
 production capabilities, recursive sourcing, substitutions, production
-consumption, end-to-end supplier-to-customer traces, and IoT/lot events.
+consumption, end-to-end supplier-to-customer traces, IoT/lot events, the stored
+per-line outcomes behind each OTD and fill-rate answer (`line_outcomes`), and
+operational records: purchase order lines, receipts, cost documents, received
+lots, sales order lines, promises, shipments and lot allocations. Each table
+reaches parts, sites and parties through exactly one join path, because
+Snowflake rejects queries over a multi-path relationship.
+
+Each governed metric is `IFF(COUNT(key) = 1, MAX(value), NULL)`: it returns the
+published value only when exactly one published answer matches, so an
+unfiltered or under-filtered query returns null rather than an arbitrary row.
+
+The 21 verified questions are one catalog. Each `vq_NN` entry on the semantic
+view has the same id and text as `GOV.VERIFIED_QUESTION` row `VQ-NN`; deploy
+fails if they differ, mirrors the SQL into `ANALYST_SQL`, and the app reads both
+through `APP.ANALYST_VERIFIED`.
 
 Only approved joins are allowed: result-to-dimensions through governed scope
 keys, contribution-to-result through evidence id, and relationship endpoints
@@ -292,11 +306,12 @@ Deployed:
 - Cortex Analyst and AI_COMPLETE;
 - Streamlit in Snowflake on warehouse runtime;
 - conditional masking policy for landed cost;
+- row access policy for site entitlement;
 - query tags and account usage history;
 - Time Travel for operational recovery.
 
-Not deployed: Dynamic Tables, Cortex Search, Cortex Agents, row-access
-policies, Data Metric Functions, Alerts, and automated `GET_LINEAGE` snapshots.
+Not deployed: Dynamic Tables, Cortex Search, Cortex Agents, Data Metric
+Functions, Alerts, and automated `GET_LINEAGE` snapshots.
 
 Do not use merely for marketing:
 
@@ -355,8 +370,8 @@ Controls:
 - product roles have no `SIM`/gold access;
 - procedures execute with minimum required rights;
 - costs use masking policy;
-- facility restrictions are not claimed; `ALLOWED_FACILITIES` is not an
-  enforcement control in this build;
+- site entitlement uses `GOV.SITE_ACCESS` (row access policy) and the persona
+  functions; aggregates with no site stay visible to every persona;
 - no `ACCOUNTADMIN` app ownership;
 - no writes from Cortex tools;
 - app SQL is allowlisted to approved procedures/views.

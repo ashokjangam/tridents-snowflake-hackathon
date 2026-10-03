@@ -134,6 +134,18 @@ INSERT INTO GOV.ONTOLOGY_TERM SELECT * FROM VALUES
  ('Facility', 'ENTITY', 'Plant or distribution centre with timezone, calendar and country. Key FACILITY_ID.'),
  ('BOM revision', 'ENTITY', 'Effective-dated parent/component structure with quantity and revision.'),
  ('Event', 'ENTITY', 'Append-only operational occurrence: receipt, disposition, issue, production, shipment, delivery attempt, delivery, invoice, correction.'),
+ ('Region', 'ENTITY', 'Customer ship-to region in one country. Key GEOGRAPHY_ID.'),
+ ('Product family', 'ENTITY', 'Grouping of finished motors and components. Key FAMILY.'),
+ ('Purchase order line', 'ENTITY', 'One part ordered from one supplier for one plant, with the supplier commitment. Key LINE_ID.'),
+ ('Receipt', 'ENTITY', 'Accepted delivery against a purchase order line at a facility. Key RECEIPT_ID.'),
+ ('Sales order line', 'ENTITY', 'One motor ordered by one customer ship-to, with the original promise date. Key LINE_ID.'),
+ ('Promise revision', 'ENTITY', 'Original or revised promise date for a sales order line. Key LINE_ID + REVISION.'),
+ ('Shipment', 'ENTITY', 'Goods dispatched against a sales order line. Key SHIP_ID.'),
+ ('Lot', 'ENTITY', 'Identified quantity of one part created by a receipt, a shipment or a production issue. Key LOT_ID.'),
+ ('Production order', 'ENTITY', 'Work order producing a part at a plant. Key ORDER_ID.'),
+ ('Cost component', 'ENTITY', 'Merchandise, freight, duty, insurance, brokerage or credit document attached to a receipt. Key COMPONENT_ID.'),
+ ('IoT sensor', 'ENTITY', 'Dock sensor reporting truck arrivals and departures with temperature. Key SENSOR_ID.'),
+ ('Metric contract', 'ENTITY', 'Versioned, hashed definition of a governed metric. Key METRIC_ID.'),
  ('SUPPLIES', 'RELATIONSHIP', 'Supplier supplies Part.'),
  ('COMPONENT_OF', 'RELATIONSHIP', 'Part is a component of a BOM revision of a parent part.'),
  ('SUBSTITUTES_FOR', 'RELATIONSHIP', 'Part substitutes for Part under an effective approved policy.'),
@@ -150,7 +162,14 @@ INSERT INTO GOV.ONTOLOGY_TERM SELECT * FROM VALUES
  ('PROMISES', 'RELATIONSHIP', 'Promise revision promises a sales-order line.'),
  ('COST_OF', 'RELATIONSHIP', 'Cost component is a cost of a receipt.'),
  ('FEEDBACK_ON', 'RELATIONSHIP', 'Rating or complaint is feedback on a sales-order line.'),
- ('SAME_AS', 'RELATIONSHIP', 'Source identifier is the same as a canonical entity, only through an administered mapping.');
+ ('SAME_AS', 'RELATIONSHIP', 'Source identifier is the same as a canonical entity, only through an administered mapping.'),
+ ('CONTAINS', 'RELATIONSHIP', 'Receipt, shipment or production issue contains a Lot.'),
+ ('ALLOCATED_TO', 'RELATIONSHIP', 'Finished Lot is allocated to a sales order line; derived from the shipment that carried the lot.'),
+ ('SENSES', 'RELATIONSHIP', 'IoT sensor senses a Lot at a dock.'),
+ ('PARENT_OF', 'RELATIONSHIP', 'Parent company is parent of a supplier or customer.'),
+ ('BELONGS_TO_FAMILY', 'RELATIONSHIP', 'Part belongs to a product family.'),
+ ('IN_COUNTRY', 'RELATIONSHIP', 'Facility or region is in a country.'),
+ ('IN_REGION', 'RELATIONSHIP', 'Customer ship-to is in a region.');
 
 -- ---------------------------------------------------------------- master data (MDM contract)
 CREATE OR REPLACE TABLE GOV.ITEM (ITEM_ID VARCHAR PRIMARY KEY, NAME VARCHAR, ITEM_TYPE VARCHAR, FAMILY VARCHAR, INVENTORY_CLASS VARCHAR, HOME_FACILITY_ID VARCHAR, UNIT_WEIGHT_KG NUMBER(18,3));
@@ -202,14 +221,19 @@ INSERT INTO GOV.ENTITLEMENT SELECT column1, column2, column3, PARSE_JSON(column4
  ('EXECUTIVE', 'Nora Hale', 'VP Supply Chain', '["*"]', TRUE, FALSE),
  ('PLANNER', 'Priya Shah', 'Supply Planner', '["*"]', FALSE, FALSE),
  ('PROCUREMENT', 'Marcus Webb', 'Procurement Manager', '["*"]', TRUE, FALSE),
- ('LOGISTICS', 'Elena Voss', 'Logistics Manager', '["*"]', FALSE, FALSE),
+ ('LOGISTICS', 'Elena Voss', 'Logistics Manager, Americas', '["FAC-DAYTON","FAC-RENO","DC-NEWARK","DC-OAKLAND"]', FALSE, FALSE),
  ('AUDITOR', 'Jordan Ellis', 'Data Steward / Auditor', '["*"]', TRUE, TRUE);
 
 CREATE OR REPLACE TABLE GOV.VERIFIED_QUESTION (
   QUESTION_ID VARCHAR PRIMARY KEY, QUESTION VARCHAR, METRIC_ID VARCHAR, SCOPE OBJECT, PERIOD_START DATE, PERIOD_END DATE,
-  AS_OF_KIND VARCHAR, COMPARE_TO VARCHAR, BENCHMARK_CLASS VARCHAR
+  AS_OF_KIND VARCHAR, COMPARE_TO VARCHAR, BENCHMARK_CLASS VARCHAR,
+  FOLLOW_UP_ID VARCHAR COMMENT 'A second approved question answered alongside this one, e.g. the order lines behind a change.',
+  ANALYST_SQL VARCHAR COMMENT 'The approved SEMANTIC_VIEW query, mirrored from the semantic view verified queries at deploy.'
 );
-INSERT INTO GOV.VERIFIED_QUESTION SELECT column1, column2, column3, PARSE_JSON(column4)::OBJECT, column5::DATE, column6::DATE, column7, column8, column9 FROM VALUES
+-- One catalog: every row is also a verified query on APP.SUPPLY_CHAIN_ONTOLOGY with the same id and question text
+-- (deploy fails otherwise). Rows with a METRIC_ID also drive the single-metric evidence envelope in APP.ASK.
+INSERT INTO GOV.VERIFIED_QUESTION (QUESTION_ID, QUESTION, METRIC_ID, SCOPE, PERIOD_START, PERIOD_END, AS_OF_KIND, COMPARE_TO, BENCHMARK_CLASS)
+SELECT column1, column2, column3, PARSE_JSON(column4)::OBJECT, column5::DATE, column6::DATE, column7, column8, column9 FROM VALUES
  ('VQ-01','Why did outbound customer OTD for MM-440 change in May 2026?','OUTBOUND_CUSTOMER_OTD','{"item_id":"MM-440","geography_id":"GEO-NORTHEAST"}','2026-05-01','2026-05-31','final','PRIOR_PERIOD','change'),
  ('VQ-02','Inbound supplier OTD for MM-440 at Dayton in May 2026','INBOUND_SUPPLIER_OTD','{"item_id":"MM-440","facility_id":"FAC-DAYTON"}','2026-05-01','2026-05-31','final',NULL,'value'),
  ('VQ-03','Outbound customer OTD for MM-440 in the Northeast in May 2026','OUTBOUND_CUSTOMER_OTD','{"item_id":"MM-440","geography_id":"GEO-NORTHEAST"}','2026-05-01','2026-05-31','final',NULL,'value'),
@@ -221,7 +245,17 @@ INSERT INTO GOV.VERIFIED_QUESTION SELECT column1, column2, column3, PARSE_JSON(c
  ('VQ-09','Outbound customer OTD by region for May 2026','OUTBOUND_CUSTOMER_OTD','{}','2026-05-01','2026-05-31','final',NULL,'breakdown'),
  ('VQ-10','Inbound supplier OTD trend for Dayton','INBOUND_SUPPLIER_OTD','{"facility_id":"FAC-DAYTON"}','2025-01-01','2026-06-30','final',NULL,'trend'),
  ('VQ-11','Network days inventory for MM-440 finished goods','DAYS_INVENTORY','{"item_id":"MM-440","inventory_class":"FINISHED_GOODS","network":true}','2026-07-01','2026-07-31','final',NULL,'value'),
- ('VQ-12','Unit fill rate by region for May 2026','UNIT_FILL_RATE','{}','2026-05-01','2026-05-31','final',NULL,'breakdown');
+ ('VQ-12','Unit fill rate by region for May 2026','UNIT_FILL_RATE','{}','2026-05-01','2026-05-31','final',NULL,'breakdown'),
+ ('VQ-13','Compare supplier on-time delivery, customer on-time delivery and fill rate for MM-440 in May 2026',NULL,'{"item_id":"MM-440"}','2026-05-01','2026-05-31','final',NULL,'compare'),
+ ('VQ-14','Which suppliers feed motor MM-401, and through which components?',NULL,'{"item_id":"MM-401"}',NULL,NULL,NULL,NULL,'relationship'),
+ ('VQ-15','Show the product-level supplier, component, home plant, customer and region paths for motor MM-401',NULL,'{"item_id":"MM-401"}',NULL,NULL,NULL,NULL,'relationship'),
+ ('VQ-16','Show IoT dock events and lots for MM-440 at Dayton',NULL,'{"item_id":"MM-440","facility_id":"FAC-DAYTON"}',NULL,NULL,NULL,NULL,'telemetry'),
+ ('VQ-17','Which MM-440 order lines in the Northeast missed customer on-time delivery in May 2026, and why?',NULL,'{"item_id":"MM-440","geography_id":"GEO-NORTHEAST"}','2026-05-01','2026-05-31','final',NULL,'line_outcomes'),
+ ('VQ-18','Trace the MM-440 sales order lines, promise dates, shipments and lots for the Northeast in May 2026',NULL,'{"item_id":"MM-440","geography_id":"GEO-NORTHEAST"}','2026-05-01','2026-05-31',NULL,NULL,'order_genealogy'),
+ ('VQ-19','Show the MM-440 purchase order lines, receipts and lots at Dayton in May 2026',NULL,'{"item_id":"MM-440","facility_id":"FAC-DAYTON"}','2026-05-01','2026-05-31',NULL,NULL,'order_genealogy'),
+ ('VQ-20','Which cost documents make up landed cost for MM-440 receipts at Dayton in May 2026?',NULL,'{"item_id":"MM-440","facility_id":"FAC-DAYTON"}','2026-05-01','2026-05-31',NULL,NULL,'cost_lines'),
+ ('VQ-21','Customer on-time delivery by site for May 2026','OUTBOUND_CUSTOMER_OTD','{}','2026-05-01','2026-05-31','final',NULL,'breakdown');
+UPDATE GOV.VERIFIED_QUESTION SET FOLLOW_UP_ID = 'VQ-17' WHERE QUESTION_ID = 'VQ-01';
 
 -- ---------------------------------------------------------------- evidence and audit (append-only)
 CREATE TABLE IF NOT EXISTS GOV.EVIDENCE (
@@ -237,6 +271,10 @@ CREATE TABLE IF NOT EXISTS GOV.QUERY_AUDIT (
 CREATE TABLE IF NOT EXISTS GOV.PIPELINE_RUN (
   RUN_ID VARCHAR, STARTED_AT TIMESTAMP_TZ, FINISHED_AT TIMESTAMP_TZ, STEP VARCHAR, STATUS VARCHAR, ROWS_IN NUMBER, ROWS_OUT NUMBER, DETAIL VARIANT
 );
+CREATE TABLE IF NOT EXISTS GOV.PERSONA_CHECK (
+  CHECKED_AT TIMESTAMP_TZ, PERSONA VARCHAR, SNOWFLAKE_ROLE VARCHAR, METRIC_ID VARCHAR, ROWS_VISIBLE NUMBER, VALUES_VISIBLE NUMBER,
+  OTHER_SITE_ROWS NUMBER, SHARED_FINGERPRINT VARCHAR, MATCHES_PLANNER BOOLEAN, PASSED BOOLEAN
+) COMMENT = 'Written by scripts/verify.py personas: what each persona role actually read from APP.SV_RESULT, logged in as that role.';
 CREATE OR REPLACE TABLE GOV.QUALITY_RESULT (CHECKED_AT TIMESTAMP_TZ, CHECK_NAME VARCHAR, OBJECT_NAME VARCHAR, RESULT NUMBER, THRESHOLD NUMBER, PASSED BOOLEAN, DETAIL VARCHAR);
 CREATE OR REPLACE TABLE GOV.MODEL_PIN (PURPOSE VARCHAR, MODEL VARCHAR, PINNED_AT TIMESTAMP_TZ, NOTE VARCHAR);
 INSERT INTO GOV.MODEL_PIN SELECT * FROM VALUES

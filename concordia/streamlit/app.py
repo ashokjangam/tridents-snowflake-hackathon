@@ -102,7 +102,7 @@ REASON_PLAIN = {
     "INSURANCE_AMOUNT_MISSING": "Insurance bill not in yet", "MERCHANDISE_AMOUNT_MISSING": "Supplier invoice not in yet",
     "MERCHANDISE_FX_MISSING": "Exchange rate for invoice missing", "TIMEZONE_MISSING": "Time zone missing",
     "UOM_UNRESOLVED": "Unknown unit of measure (for example kg vs pieces)", "ZERO_DEMAND": "No recent demand",
-    "COST_NOT_ENTITLED": "Your role can't see cost",
+    "COST_NOT_ENTITLED": "Your role can't see cost", "SITE_NOT_ENTITLED": "Your role does not cover this site",
 }
 DRIVER_PLAIN = {
     "COMPANY_CANCELLED": "We cancelled the order", "FAILED_OR_MISDELIVERED": "Delivery failed or went to the wrong place",
@@ -248,7 +248,8 @@ def q(sql: str, params: list | None = None) -> pd.DataFrame:
 
 @st.cache_data(ttl=120, show_spinner=False)
 def personas() -> pd.DataFrame:
-    return q("SELECT PERSONA, DISPLAY_NAME, TITLE, COST_VISIBLE, AUDIT_VISIBLE FROM CONCORDIA.APP.V_ENTITLEMENT ORDER BY PERSONA")
+    return q("SELECT PERSONA, DISPLAY_NAME, TITLE, COST_VISIBLE, AUDIT_VISIBLE, ALLOWED_FACILITIES FROM CONCORDIA.APP.V_ENTITLEMENT "
+             "ORDER BY PERSONA")
 
 
 @st.cache_data(ttl=120, show_spinner=False)
@@ -498,6 +499,11 @@ def go(target: str):
     st.session_state.nav = target
 
 
+def site_list(allowed) -> str:
+    sites = as_list(allowed)
+    return "all" if "*" in sites else ", ".join(FAC_NAMES.get(s, s) for s in sites)
+
+
 # ---------------------------------------------------------------- sidebar
 logo = svg("concordia-logo.svg")
 with st.sidebar:
@@ -507,11 +513,13 @@ with st.sidebar:
     persona = st.selectbox("Viewing as", list(labels), index=list(labels).index("EXECUTIVE") if "EXECUTIVE" in labels else 0,
                            format_func=lambda p: labels[p], key="persona",
                            help="Pick whose eyes you are looking through. The database decides what each role may see: "
-                                "planners and logistics cannot see cost. Every role gets the same numbers otherwise.")
+                                "planners and logistics cannot see cost, and logistics sees only Americas sites. Where two roles "
+                                "can both see a number, it is the same number.")
     me = roster[roster.PERSONA == persona].iloc[0]
     st.markdown(
         f'<div class="persona"><b>{esc(me.DISPLAY_NAME)}</b><br>{esc(me.TITLE)}<br>'
-        f'Cost {"visible" if me.COST_VISIBLE else "hidden"} · Audit trail {"everyone" if me.AUDIT_VISIBLE else "own questions"}</div>',
+        f'Cost {"visible" if me.COST_VISIBLE else "hidden"} · Audit trail {"everyone" if me.AUDIT_VISIBLE else "own questions"}<br>'
+        f'Sites {esc(site_list(me.ALLOWED_FACILITIES))}</div>',
         unsafe_allow_html=True)
     st.write("")
     page = st.radio("Go to", list(PAGES), captions=list(PAGES.values()), key="nav")
@@ -853,20 +861,29 @@ def audit_semantic(who: str, question: str, answer: dict) -> None:
 
 
 def verified_fallback(question: str):
-    found = q("SELECT QUESTION, SQL_TEXT FROM CONCORDIA.APP.ANALYST_VERIFIED "
+    found = q("SELECT QUESTION, SQL_TEXT, FOLLOW_UP_ID FROM CONCORDIA.APP.ANALYST_VERIFIED "
               "WHERE JAROWINKLER_SIMILARITY(QUESTION, ?) >= 96 "
               "ORDER BY JAROWINKLER_SIMILARITY(QUESTION, ?) DESC LIMIT 1", [question, question])
     if found.empty:
         return None
-    return found.iloc[0].QUESTION, found.iloc[0].SQL_TEXT
+    return found.iloc[0].QUESTION, found.iloc[0].SQL_TEXT, found.iloc[0].FOLLOW_UP_ID
 
 
 def verified_exact(question: str):
-    found = q("SELECT QUESTION, SQL_TEXT FROM CONCORDIA.APP.ANALYST_VERIFIED "
+    found = q("SELECT QUESTION, SQL_TEXT, FOLLOW_UP_ID FROM CONCORDIA.APP.ANALYST_VERIFIED "
               "WHERE LOWER(TRIM(QUESTION)) = LOWER(TRIM(?)) LIMIT 1", [question])
     if found.empty:
         return None
-    return found.iloc[0].QUESTION, found.iloc[0].SQL_TEXT
+    return found.iloc[0].QUESTION, found.iloc[0].SQL_TEXT, found.iloc[0].FOLLOW_UP_ID
+
+
+def follow_up(question_id, who: str):
+    if not isinstance(question_id, str) or not question_id:
+        return None
+    found = q("SELECT QUESTION, SQL_TEXT FROM CONCORDIA.APP.ANALYST_VERIFIED WHERE QUESTION_ID = ?", [question_id])
+    if found.empty:
+        return None
+    return {"question": found.iloc[0].QUESTION, "sql": found.iloc[0].SQL_TEXT, "run": run_semantic(who, found.iloc[0].SQL_TEXT)}
 
 
 def governed_alias(question: str):
@@ -889,12 +906,12 @@ def governed_alias(question: str):
 
 def analyst_answer(question: str, who: str) -> dict:
     messages = [{"role": "user", "content": [{"type": "text", "text": question}]}]
-    out = {"text": "", "sql": None, "suggestions": [], "run": None, "attempts": 0, "fallback": None}
+    out = {"text": "", "sql": None, "suggestions": [], "run": None, "attempts": 0, "fallback": None, "follow_up": None}
     exact = verified_exact(question)
     if exact:
-        approved, sql = exact
+        approved, sql, next_id = exact
         out.update({"text": "Using the steward-approved semantic query for this question.",
-                    "sql": sql, "run": run_semantic(who, sql), "fallback": approved})
+                    "sql": sql, "run": run_semantic(who, sql), "fallback": approved, "follow_up": follow_up(next_id, who)})
         return out
     alias = governed_alias(question)
     if alias:
@@ -925,10 +942,11 @@ def analyst_answer(question: str, who: str) -> dict:
                         "results.known_as_of and results.month. Do not re-aggregate."}]}]
     match = verified_fallback(question)
     if match:
-        approved, sql = match
+        approved, sql, next_id = match
         out["fallback"] = approved
         out["sql"] = sql
         out["run"] = run_semantic(who, sql)
+        out["follow_up"] = follow_up(next_id, who)
         out["text"] = (out["text"] + " " if out["text"] else "") + "The generated query did not pass, so this is the approved query for that question."
     return out
 
@@ -948,6 +966,19 @@ def render_analyst(entry: dict):
         st.dataframe(frame, hide_index=True, use_container_width=True)
     elif verdict in ("VERIFIED", "DESCRIPTIVE"):
         st.info("The query ran but matched no governed answers for that selection.")
+    extra = a.get("follow_up") or {}
+    extra_run = extra.get("run") or {}
+    if extra_run.get("verdict") in ("VERIFIED", "DESCRIPTIVE"):
+        st.markdown(f'<div class="section">{esc(extra["question"])}</div><div class="sub">The order lines stored with the published '
+                    'answer, with the cause recorded for each miss. Same publish run, so they add up to the numbers above.</div>',
+                    unsafe_allow_html=True)
+        if extra_run.get("rows"):
+            st.dataframe(pd.DataFrame(extra_run["rows"], columns=[c.replace("_", " ").lower() for c in extra_run["columns"]]),
+                         hide_index=True, use_container_width=True)
+        else:
+            st.info("No order lines match for this persona.")
+        with st.expander("The approved follow-up query"):
+            st.code(extra.get("sql") or "", language="sql")
     for i, text in enumerate(a.get("suggestions") or []):
         if st.button(text, key=f"sug{entry['id']}_{i}", use_container_width=True):
             st.session_state.pending = text
@@ -979,13 +1010,10 @@ def page_ask():
     )
     analyst_mode = engine == "Governed semantic answer"
     if analyst_mode:
-        suggestions = ["Compare supplier on-time delivery, customer on-time delivery and fill rate for MM-440 in May 2026",
-                       "Show the product-level supplier, component, home plant, customer and region paths for motor MM-401",
-                       "Show IoT dock events and lots for MM-440 at Dayton",
-                       "Landed cost per accepted unit for MM-440 at Dayton in May 2026, early and final",
-                       "What was OTD last May?", "What is our OTIF for May 2026?"]
+        suggestions = list(D["questions"].QUESTION) + ["What was OTD last May?", "What is our OTIF for May 2026?"]
     else:
-        suggestions = list(D["questions"].QUESTION) + ["What was OTD last month?", "What is our OTIF for May 2026?"]
+        envelope = D["questions"][D["questions"].METRIC_ID.notna()]
+        suggestions = list(envelope.QUESTION) + ["What was OTD last month?", "What is our OTIF for May 2026?"]
     with st.expander("Questions to try", expanded=not st.session_state.chat):
         grid = st.columns(3)
         for i, text in enumerate(suggestions):
@@ -1045,15 +1073,8 @@ def page_bridge():
     a, b, c = st.columns([1, 1, 2])
     a.markdown(card(metric, before, title=f"{METRICS[metric]['short']} · {month_label(prior)}"), unsafe_allow_html=True)
     b.markdown(card(metric, now, title=f"{METRICS[metric]['short']} · {month_label(month)}"), unsafe_allow_html=True)
-    where = "WHERE METRIC_ID = ? AND AS_OF_KIND = 'final' AND PERIOD_START IN (?::DATE, ?::DATE)"
-    params = [metric, str(prior), str(month)]
-    if item:
-        where += " AND ITEM_ID = ?"
-        params.append(item)
-    if geo:
-        where += " AND GEOGRAPHY_ID = ?"
-        params.append(geo)
-    lines = table("V_CONTRIBUTION", where, tuple(params), limit=5000)
+    lines = q("SELECT * FROM TABLE(CONCORDIA.APP.CONTRIBUTION_FOR(?, ?, ?::DATE, ?::DATE, ?::VARCHAR, ?::VARCHAR)) LIMIT 5000",
+              [persona, metric, str(prior), str(month), item, geo])
     if lines.empty:
         c.info(METRICS[metric]["empty"])
         return
@@ -1275,10 +1296,29 @@ def page_governance():
         st.caption("Words that mean different things to different teams. Concordia asks which one you mean, or says it has no agreed definition.")
         st.dataframe(table("V_REJECTED_ALIAS"), hide_index=True, use_container_width=True)
     with tabs[2]:
-        st.dataframe(roster.rename(columns={"PERSONA": "Role", "DISPLAY_NAME": "Name", "TITLE": "Title", "COST_VISIBLE": "Sees cost",
-                                            "AUDIT_VISIBLE": "Sees everyone's questions"}), hide_index=True, use_container_width=True)
-        st.caption("Rules are enforced in the database (APP.RESULTS_FOR, APP.RECEIPTS_FOR, APP.ASK_METRIC). Roles are picked in this "
-                   "demo; in production they would come from each person's Snowflake login.")
+        who = roster.assign(Sites=roster.ALLOWED_FACILITIES.map(site_list)).drop(columns=["ALLOWED_FACILITIES"])
+        st.dataframe(who.rename(columns={"PERSONA": "Role", "DISPLAY_NAME": "Name", "TITLE": "Title", "COST_VISIBLE": "Sees cost",
+                                         "AUDIT_VISIBLE": "Sees everyone's questions"}), hide_index=True, use_container_width=True)
+        st.caption("Rules are enforced in the database: a masking policy hides cost and a row access policy hides other sites' rows "
+                   "on the semantic view, and APP.RESULTS_FOR, APP.BREAKDOWN_FOR, APP.CONTRIBUTION_FOR, APP.RECEIPTS_FOR and "
+                   "APP.ASK_METRIC apply the same rules. Roles are picked in this demo; each one is also a real Snowflake role.")
+        checked = table("V_PERSONA_CHECK", "ORDER BY METRIC_ID, PERSONA", limit=200)
+        if checked.empty:
+            st.info("The per-role check has not been run yet (scripts/verify.py personas).")
+        else:
+            when = pd.Timestamp(checked.CHECKED_AT.iloc[0]).strftime("%d %b %Y %H:%M UTC")
+            st.markdown(f"**Same number for every team, checked by logging in as each role** · {when} · "
+                        f"{'passed' if bool(checked.PASSED.iloc[0]) else 'FAILED'}")
+            st.caption("Each Snowflake persona role read APP.SV_RESULT itself. On the answers every role may see (network, part, "
+                       "region and Americas-site answers), the fingerprint of every published value must equal the planner's. "
+                       "Other-site answers are the rows outside Americas; logistics must see none.")
+            st.dataframe(checked[["PERSONA", "SNOWFLAKE_ROLE", "METRIC_ID", "ROWS_VISIBLE", "VALUES_VISIBLE", "OTHER_SITE_ROWS",
+                                  "MATCHES_PLANNER"]]
+                         .assign(METRIC_ID=checked.METRIC_ID.map(lambda m: METRICS.get(m, {}).get("short", m)))
+                         .rename(columns={"PERSONA": "Persona", "SNOWFLAKE_ROLE": "Snowflake role", "METRIC_ID": "Measure",
+                                          "ROWS_VISIBLE": "Shared answers read", "VALUES_VISIBLE": "Values not masked",
+                                          "OTHER_SITE_ROWS": "Other-site answers", "MATCHES_PLANNER": "Same as planner"}),
+                         hide_index=True, use_container_width=True)
     with tabs[3]:
         audit = q("SELECT * FROM TABLE(CONCORDIA.APP.AUDIT_FOR(?)) ORDER BY CREATED_AT DESC LIMIT 300", [persona])
         st.dataframe(audit, hide_index=True, use_container_width=True, height=360)

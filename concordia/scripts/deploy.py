@@ -15,6 +15,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(ROOT), str(ROOT / "src"), str(ROOT / "scripts")]
 
+from catalog import verified_queries  # noqa: E402
 from metric_sql import REPLACEMENTS  # noqa: E402
 from sf import connect, rows, run_file  # noqa: E402
 
@@ -131,14 +132,21 @@ def step_personas(cur):
 def step_semantic(cur):
     admin(cur)
     run_file(cur, SQL / "06_semantic.sql", echo=False)
-    text = (SQL / "06_semantic.sql").read_text(encoding="utf-8")
-    pairs = re.findall(r"QUESTION '([^']+)'.*?SQL\s+'((?:[^']|'')*)'", text, flags=re.S)
-    cur.execute("CREATE OR REPLACE TABLE CONCORDIA.APP.ANALYST_VERIFIED (QUESTION VARCHAR, SQL_TEXT VARCHAR)")
-    for question, statement in pairs:
-        cur.execute("INSERT INTO CONCORDIA.APP.ANALYST_VERIFIED (QUESTION, SQL_TEXT) VALUES (%s, %s)",
-                    (question, statement.replace("''", "'")))
-    cur.execute("GRANT SELECT ON TABLE CONCORDIA.APP.ANALYST_VERIFIED TO ROLE CONCORDIA_APP_OWNER")
-    print(f"  verified queries: {len(pairs)}")
+    queries = verified_queries((SQL / "06_semantic.sql").read_text(encoding="utf-8"))
+    catalog = {r["QUESTION_ID"]: r["QUESTION"] for r in rows(cur, "SELECT QUESTION_ID, QUESTION FROM CONCORDIA.GOV.VERIFIED_QUESTION")}
+    mirrored = {qid: question for qid, question, _ in queries}
+    if mirrored != catalog:
+        drift = sorted(set(mirrored.items()) ^ set(catalog.items()))
+        raise SystemExit(f"verified question catalog and semantic view disagree: {drift}")
+    cur.execute("UPDATE CONCORDIA.GOV.VERIFIED_QUESTION SET ANALYST_SQL = NULL")
+    for qid, _, statement in queries:
+        cur.execute("UPDATE CONCORDIA.GOV.VERIFIED_QUESTION SET ANALYST_SQL = %s WHERE QUESTION_ID = %s", (statement, qid))
+    if rows(cur, "SHOW TABLES LIKE 'ANALYST_VERIFIED' IN SCHEMA CONCORDIA.APP"):
+        cur.execute("DROP TABLE CONCORDIA.APP.ANALYST_VERIFIED")
+    cur.execute("CREATE OR REPLACE SECURE VIEW CONCORDIA.APP.ANALYST_VERIFIED AS SELECT QUESTION_ID, QUESTION, ANALYST_SQL AS SQL_TEXT, "
+                "FOLLOW_UP_ID, METRIC_ID FROM CONCORDIA.GOV.VERIFIED_QUESTION")
+    cur.execute("GRANT SELECT ON VIEW CONCORDIA.APP.ANALYST_VERIFIED TO ROLE CONCORDIA_APP_OWNER")
+    print(f"  verified queries: {len(queries)} (one catalog: GOV.VERIFIED_QUESTION = semantic view)")
 
 
 def step_streamlit(cur):

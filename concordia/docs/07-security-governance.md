@@ -54,9 +54,10 @@ inherit `CONCORDIA_COST_READER`; Planning and Logistics do not.
 
 ## Persona entitlements
 
-`GOV.ENTITLEMENT` stores the app persona, effective dates, cost visibility and
-audit visibility. `ALLOWED_FACILITIES` is currently `["*"]` and is not used as
-a facility restriction; the build does not claim per-facility row security.
+`GOV.ENTITLEMENT` stores the app persona, effective dates, cost visibility,
+audit visibility and `ALLOWED_FACILITIES`. Logistics (Elena Voss, Logistics
+Manager, Americas) is limited to Dayton, Reno, Newark and Oakland; every other
+persona has `["*"]`.
 
 Persona names do not grant object privileges. Real Snowflake persona roles
 prove the semantic layer independently, while the Streamlit dropdown records
@@ -64,9 +65,24 @@ the selected persona for the conditional cost masking policy.
 
 ## Row and column controls
 
-- No row-access policy is deployed; every persona currently has network-wide
-  facility access.
-- Conditional masking policies protect landed-cost result columns.
+- Row access policy `GOV.SITE_ACCESS` on the semantic-view tables (`SV_RESULT`,
+  `SV_LINE_OUTCOME`, purchase and sales order lines, receipts, cost documents,
+  lots, promises, shipments, IoT and consumption) hides rows whose site is not
+  in the persona's `ALLOWED_FACILITIES`. A persona role is matched by name
+  (`CONCORDIA_LOGISTICS` → `LOGISTICS`); the app owner is matched through the
+  persona recorded for its session in `GOV.APP_PERSONA_CONTEXT`.
+- Rows with no site (network, part, region, supplier and customer answers) stay
+  visible to every persona. They are aggregates that include other sites, so the
+  restriction is on site-level answers and site records, not on totals.
+- `APP.RESULTS_FOR`, `BREAKDOWN_FOR`, `CONTRIBUTION_FOR`, `RECEIPTS_FOR` and
+  `ASK_METRIC` apply the same rule and return `FORBIDDEN` with
+  `SITE_NOT_ENTITLED`.
+- Conditional masking policies protect landed-cost result columns and cost
+  document amounts.
+- `scripts/verify.py personas` logs in as each persona role, checks that
+  Logistics reads no other-site rows while the others do, checks that answers
+  every role may see are identical, and stores the per-role result in
+  `GOV.PERSONA_CHECK` (shown on the Governance page).
 - Secure views expose only governed fields.
 - UI filters are convenience, not security.
 
