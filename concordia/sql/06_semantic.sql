@@ -26,6 +26,9 @@ SELECT SHA2(CONCAT_WS('|', r.METRIC_ID, r.AS_OF_KIND, TO_VARCHAR(r.PERIOD_START)
          WHEN r.GEOGRAPHY_ID IS NOT NULL THEN 'REGION'
          WHEN r.SUPPLIER_ID IS NOT NULL THEN 'SUPPLIER'
          ELSE 'CUSTOMER' END AS SCOPE_LEVEL,
+       IFF(r.FACILITY_ID IS NULL,
+           'Aggregate is not filtered by persona site-detail entitlement; it may include contributing sites whose detail is hidden.',
+           'Site-scoped: the row is subject to the persona site entitlement.') AS ACCESS_NOTE,
        r.ITEM_ID, r.FACILITY_ID, r.GEOGRAPHY_ID, r.SUPPLIER_ID, r.CUSTOMER_ID,
        r.STATUS, r.NUMERATOR, r.DENOMINATOR, r.DISPLAY, r.VALUE_NUM, r.COVERAGE, ARRAY_TO_STRING(r.REASONS, ', ') AS REASONS,
        r.AFFECTED_COMMITMENTS, r.RUN_ID, r.ORIGIN
@@ -48,6 +51,10 @@ CREATE OR REPLACE SECURE VIEW APP.SV_METRIC AS
   SELECT METRIC_ID, DISPLAY_NAME, QUESTION, UNIT, OWNER, APPROVER, METRIC_VERSION, DEFINITION_HASH, RESULT_FUNCTION FROM GOV.METRIC_CONTRACT;
 CREATE OR REPLACE SECURE VIEW APP.SV_SUPPLY AS
   SELECT DISTINCT SUPPLIER_ID, ITEM_ID FROM GOV.SUPPLY;
+CREATE OR REPLACE SECURE VIEW APP.SV_PART_ALIAS AS
+  SELECT SOURCE_SYSTEM, SOURCE_KEY, CANONICAL_ID AS ITEM_ID, METHOD, VALID_FROM
+  FROM GOV.SOURCE_ALIAS
+  WHERE ENTITY_TYPE = 'ITEM';
 CREATE OR REPLACE SECURE VIEW APP.SV_BOM AS
   SELECT PARENT_ID AS PARENT_ITEM_ID, COMPONENT_ID AS COMPONENT_ITEM_ID, MAX(QTY_PER) AS QTY_PER
   FROM CORE.BOM WHERE WORLD_ID = 'MERIDIAN' GROUP BY ALL;
@@ -143,11 +150,21 @@ CREATE OR REPLACE SECURE VIEW APP.SV_SO_LINE AS
   WITH promises AS (
     SELECT LINE_ID, MAX_BY(PROMISE_ON, REVISION) AS LATEST_PROMISE_ON, COUNT_IF(KIND = 'REVISED') AS PROMISE_REVISIONS
     FROM CORE.PROMISE_REVISION WHERE WORLD_ID = 'MERIDIAN' GROUP BY LINE_ID
+  ), feedback AS (
+    SELECT LINE_ID, SUM(IFF(KIND = 'RETURN', COALESCE(QTY, 0), 0)) AS RETURNED_QTY,
+           COUNT_IF(KIND = 'RATING') AS RATING_COUNT, AVG(IFF(KIND = 'RATING', RATING, NULL)) AS AVERAGE_RATING,
+           COUNT_IF(KIND = 'COMPLAINT') AS COMPLAINT_COUNT, MAX(FEEDBACK_ON) AS LATEST_FEEDBACK_ON
+    FROM CORE.FEEDBACK WHERE WORLD_ID = 'MERIDIAN' GROUP BY LINE_ID
   )
-  SELECT s.LINE_ID AS SO_LINE_ID, s.CUSTOMER_ID, s.ITEM_ID, s.FACILITY_ID, s.GEOGRAPHY_ID, s.ORDERED_QTY, s.ORDER_ON,
+  SELECT s.LINE_ID AS SO_LINE_ID, s.CUSTOMER_ID, s.SHIP_TO_ID, st.COUNTRY AS SHIP_TO_COUNTRY,
+         st.TIMEZONE AS SHIP_TO_TIMEZONE, s.ITEM_ID, s.FACILITY_ID, s.GEOGRAPHY_ID, s.ORDERED_QTY, s.ORDER_ON,
          s.ORIGINAL_PROMISE_ON, DATE_TRUNC('month', s.ORIGINAL_PROMISE_ON) AS PROMISE_MONTH, p.LATEST_PROMISE_ON,
-         COALESCE(p.PROMISE_REVISIONS, 0) AS PROMISE_REVISIONS, s.CANCELLATION, s.HOLD_START, s.HOLD_END, s.SUBSTITUTE, s.INCOTERM
+         COALESCE(p.PROMISE_REVISIONS, 0) AS PROMISE_REVISIONS, s.CANCELLATION, s.HOLD_START, s.HOLD_END, s.SUBSTITUTE, s.INCOTERM,
+         COALESCE(f.RETURNED_QTY, 0) AS RETURNED_QTY, COALESCE(f.RATING_COUNT, 0) AS RATING_COUNT,
+         f.AVERAGE_RATING, COALESCE(f.COMPLAINT_COUNT, 0) AS COMPLAINT_COUNT, f.LATEST_FEEDBACK_ON
   FROM CORE.SO_LINE s LEFT JOIN promises p ON p.LINE_ID = s.LINE_ID
+  LEFT JOIN feedback f ON f.LINE_ID = s.LINE_ID
+  LEFT JOIN GOV.SHIP_TO st ON st.SHIP_TO_ID = s.SHIP_TO_ID
   WHERE s.WORLD_ID = 'MERIDIAN';
 CREATE OR REPLACE SECURE VIEW APP.SV_PROMISE AS
   SELECT p.LINE_ID || '#' || p.REVISION AS PROMISE_KEY, p.LINE_ID AS SO_LINE_ID, s.FACILITY_ID, p.REVISION, p.KIND AS PROMISE_KIND,
@@ -254,6 +271,9 @@ CREATE OR REPLACE SEMANTIC VIEW APP.SUPPLY_CHAIN_ONTOLOGY
       COMMENT = 'The written, versioned and hashed definition of each governed metric.',
     supply_links AS CONCORDIA.APP.SV_SUPPLY PRIMARY KEY (SUPPLIER_ID, ITEM_ID)
       COMMENT = 'Ontology relationship SUPPLIES: supplier supplies part.',
+    part_aliases AS CONCORDIA.APP.SV_PART_ALIAS PRIMARY KEY (SOURCE_SYSTEM, SOURCE_KEY)
+      WITH SYNONYMS = ('source item codes', 'material aliases', 'sku aliases', 'item identity mappings')
+      COMMENT = 'SAME_AS identity mappings from each source-system item code to one canonical part.',
     bill_of_materials AS CONCORDIA.APP.SV_BOM PRIMARY KEY (PARENT_ITEM_ID, COMPONENT_ITEM_ID)
       WITH SYNONYMS = ('bom', 'recipe', 'components of')
       COMMENT = 'Ontology relationship COMPONENT_OF: component part goes into a parent motor or sub-assembly.',
@@ -291,7 +311,7 @@ CREATE OR REPLACE SEMANTIC VIEW APP.SUPPLY_CHAIN_ONTOLOGY
       COMMENT = 'Lots created by a goods receipt: CONTAINS.',
     sales_orders AS CONCORDIA.APP.SV_SO_LINE PRIMARY KEY (SO_LINE_ID)
       WITH SYNONYMS = ('sales order lines', 'customer orders', 'so lines', 'outbound orders')
-      COMMENT = 'Customer order lines (ERP/CRM) with the original promise date, latest promise date and number of promise revisions.',
+      COMMENT = 'Customer order lines (ERP/CRM) with ship-to, promises, returns, ratings and complaint counts. Feedback is pre-aggregated here so Analyst has one unambiguous path.',
     promises AS CONCORDIA.APP.SV_PROMISE PRIMARY KEY (PROMISE_KEY)
       WITH SYNONYMS = ('promise dates', 'promise revisions', 'commitments')
       COMMENT = 'Every promise made on a customer order line: PROMISES. Revision 1 is the original; customer OTD always measures the original.',
@@ -311,6 +331,7 @@ CREATE OR REPLACE SEMANTIC VIEW APP.SUPPLY_CHAIN_ONTOLOGY
     result_contract AS results (METRIC_ID) REFERENCES metric_contracts,
     supply_supplier AS supply_links (SUPPLIER_ID) REFERENCES suppliers,
     supply_part AS supply_links (ITEM_ID) REFERENCES parts,
+    alias_part AS part_aliases (ITEM_ID) REFERENCES parts,
     bom_parent AS bill_of_materials (PARENT_ITEM_ID) REFERENCES parts,
     bom_component AS bill_of_materials (COMPONENT_ITEM_ID) REFERENCES parts,
     capability_site AS capabilities (FACILITY_ID) REFERENCES sites,
@@ -365,12 +386,16 @@ CREATE OR REPLACE SEMANTIC VIEW APP.SUPPLY_CHAIN_ONTOLOGY
     PRIVATE receipt_lots.received_lot_ref AS LOT_ID,
     PRIVATE sales_orders.so_ref AS SO_LINE_ID,
     sales_orders.customer_ordered_units AS ORDERED_QTY COMMENT = 'Units the customer ordered.',
+    sales_orders.returned_units AS RETURNED_QTY COMMENT = 'Units returned against the sales order line.',
+    sales_orders.rating_observation_count AS RATING_COUNT COMMENT = 'Customer rating observations attached to the line.',
+    sales_orders.complaint_observation_count AS COMPLAINT_COUNT COMMENT = 'Customer complaints attached to the line.',
     PRIVATE promises.promise_ref AS PROMISE_KEY,
     PRIVATE shipments.shipment_ref AS SHIPMENT_ID,
     shipments.shipped_units AS SHIPPED_QTY COMMENT = 'Units on the shipment.',
     PRIVATE allocations.allocated_lot_ref AS LOT_ID,
     PRIVATE supply_links.supplier_ref AS SUPPLIER_ID,
     PRIVATE supply_links.part_ref AS ITEM_ID,
+    PRIVATE part_aliases.alias_ref AS SOURCE_KEY,
     PRIVATE capabilities.part_ref AS ITEM_ID,
     PRIVATE sourcing.supplier_ref AS SUPPLIER_ID,
     PRIVATE sourcing.component_ref AS COMPONENT_ITEM_ID,
@@ -393,6 +418,8 @@ CREATE OR REPLACE SEMANTIC VIEW APP.SUPPLY_CHAIN_ONTOLOGY
     results.as_of_timestamp AS AS_OF COMMENT = 'The exact recorded-as-of timestamp of the answer.',
     results.scope_level AS SCOPE_LEVEL WITH SYNONYMS = ('grain', 'level')
       COMMENT = 'NETWORK, PART, PART_SITE, PART_REGION, SITE, REGION, SUPPLIER or CUSTOMER. Each governed answer exists at exactly one scope level.',
+    results.access_note AS ACCESS_NOTE
+      COMMENT = 'Explicit entitlement label. Aggregates without a site key are not filtered by site-detail entitlement and may include contributing sites the persona cannot inspect.',
     results.status AS STATUS
       COMMENT = 'COMPLETE, INCOMPLETE (inputs missing, not final), ABSTAIN, ZERO_DENOMINATOR (nothing due), ZERO_DEMAND.',
     results.governed_value_text AS DISPLAY WITH SYNONYMS = ('display value', 'reported value')
@@ -433,6 +460,10 @@ CREATE OR REPLACE SEMANTIC VIEW APP.SUPPLY_CHAIN_ONTOLOGY
     metric_contracts.definition_version AS METRIC_VERSION,
     metric_contracts.definition_hash AS DEFINITION_HASH,
     metric_contracts.computed_by AS RESULT_FUNCTION,
+    part_aliases.source_system AS SOURCE_SYSTEM,
+    part_aliases.source_item_key AS SOURCE_KEY WITH SYNONYMS = ('source item code', 'material number'),
+    part_aliases.match_method AS METHOD,
+    part_aliases.valid_from AS VALID_FROM,
     bill_of_materials.parent_part_id AS PARENT_ITEM_ID WITH SYNONYMS = ('assembly', 'parent motor'),
     sourcing.fed_motor_id AS MOTOR_ID WITH SYNONYMS = ('motor fed', 'finished motor', 'end product')
       COMMENT = 'Finished motor that the supplied component ends up in.',
@@ -512,6 +543,9 @@ CREATE OR REPLACE SEMANTIC VIEW APP.SUPPLY_CHAIN_ONTOLOGY
     receipt_lots.lot_id AS LOT_ID,
     receipt_lots.received_qty AS QTY,
     sales_orders.so_line_id AS SO_LINE_ID WITH SYNONYMS = ('sales order line', 'customer order line', 'order line'),
+    sales_orders.ship_to_id AS SHIP_TO_ID WITH SYNONYMS = ('delivery location', 'ship-to'),
+    sales_orders.ship_to_country AS SHIP_TO_COUNTRY,
+    sales_orders.ship_to_timezone AS SHIP_TO_TIMEZONE,
     sales_orders.order_on AS ORDER_ON,
     sales_orders.original_promise_on AS ORIGINAL_PROMISE_ON COMMENT = 'The first promise date; customer OTD measures this one.',
     sales_orders.promise_month AS PROMISE_MONTH COMMENT = 'Month of the original promise date.',
@@ -519,6 +553,11 @@ CREATE OR REPLACE SEMANTIC VIEW APP.SUPPLY_CHAIN_ONTOLOGY
     sales_orders.promise_revisions AS PROMISE_REVISIONS COMMENT = 'Number of times the promise date was moved.',
     sales_orders.so_cancellation AS CANCELLATION,
     sales_orders.substitute AS SUBSTITUTE COMMENT = 'Substitute part shipped, if any.',
+    sales_orders.returned_qty AS RETURNED_QTY COMMENT = 'Synthetic CRM return quantity recorded against the order line.',
+    sales_orders.rating_count AS RATING_COUNT COMMENT = 'Number of synthetic CRM ratings recorded against the order line.',
+    sales_orders.average_rating AS AVERAGE_RATING COMMENT = 'Average synthetic CRM rating on the order line; descriptive, not a governed KPI.',
+    sales_orders.complaint_count AS COMPLAINT_COUNT COMMENT = 'Number of synthetic CRM complaints recorded against the order line.',
+    sales_orders.latest_feedback_on AS LATEST_FEEDBACK_ON,
     promises.revision AS REVISION,
     promises.promise_kind AS PROMISE_KIND COMMENT = 'ORIGINAL or REVISED.',
     promises.promise_on AS PROMISE_ON,
@@ -557,6 +596,8 @@ CREATE OR REPLACE SEMANTIC VIEW APP.SUPPLY_CHAIN_ONTOLOGY
       COMMENT = 'Distinct suppliers linked by the SUPPLIES relationship.',
     supply_links.supplied_part_count AS COUNT(DISTINCT supply_links.part_ref)
       COMMENT = 'Distinct parts linked by the SUPPLIES relationship.',
+    part_aliases.source_alias_count AS COUNT(part_aliases.alias_ref)
+      COMMENT = 'Source-system item codes mapped by SAME_AS to canonical parts.',
     sourcing.feeding_supplier_count AS COUNT(DISTINCT sourcing.supplier_ref)
       WITH SYNONYMS = ('suppliers behind a motor', 'number of suppliers feeding')
       COMMENT = 'Distinct suppliers whose parts end up in the selected motors.',
@@ -592,41 +633,44 @@ CREATE OR REPLACE SEMANTIC VIEW APP.SUPPLY_CHAIN_ONTOLOGY
     receipt_lots.received_lot_count AS COUNT(receipt_lots.received_lot_ref),
     sales_orders.so_line_count AS COUNT(sales_orders.so_ref) COMMENT = 'Customer order lines.',
     sales_orders.units_ordered_by_customers AS SUM(sales_orders.customer_ordered_units),
+    sales_orders.units_returned AS SUM(sales_orders.returned_units),
+    sales_orders.total_rating_observations AS SUM(sales_orders.rating_observation_count),
+    sales_orders.total_complaints AS SUM(sales_orders.complaint_observation_count),
     promises.promise_count AS COUNT(promises.promise_ref),
     shipments.shipment_count AS COUNT(shipments.shipment_ref),
     shipments.units_shipped AS SUM(shipments.shipped_units),
     allocations.allocated_lot_count AS COUNT(allocations.allocated_lot_ref)
   )
   COMMENT = 'Concordia supply chain ontology (synthetic Meridian Motion). Governed metric values come only from the CORE metric functions via the published grid.'
-  AI_SQL_GENERATION 'Always write SELECT * FROM SEMANTIC_VIEW(CONCORDIA.APP.SUPPLY_CHAIN_ONTOLOGY METRICS ... DIMENSIONS ... WHERE ...) with an optional ORDER BY outside; never query the semantic view with FROM, GROUP BY or AGG(). Every governed answer is one pre-computed row in results. Always filter results.metric_id to the governed metric ids asked about (INBOUND_SUPPLIER_OTD, OUTBOUND_CUSTOMER_OTD, UNIT_FILL_RATE, DAYS_INVENTORY, LANDED_COST_PER_ACCEPTED_UNIT), using IN for several, and include results.metric_id as a dimension. Always filter results.scope_level to exactly one value that matches the question: NETWORK for the whole business; PART for one part across all sites and regions; PART_SITE for a part at a site; PART_REGION for a part in a customer region; SITE, REGION, SUPPLIER or CUSTOMER when only that is named. Always filter results.known_as_of: use ''final'' unless the user asks what was known early, at the time, or on the 5th of the next month, then use ''early''. Never average, sum, subtract or otherwise recompute governed metrics across rows, months or scopes; to compare, return the rows side by side ordered by month. Months are first-of-month dates in results.month. Always return results.status and results.governed_value_text next to any governed metric. Days of inventory is a point-in-time snapshot published for every finished motor represented in inventory at site and part/network scopes: for final use month 2026-07-01, for early use the month asked. If a landed cost row has status INCOMPLETE its value is null by contract; report the status and reasons and do not substitute any number. Match parts by parts.part_id when an id like MM-440 or CP-1019 is given. For which suppliers feed a motor, or through which components, answer with SEMANTIC_VIEW(CONCORDIA.APP.SUPPLY_CHAIN_ONTOLOGY DIMENSIONS suppliers.supplier_name, sourcing.via_component_id, parts.part_name, sourcing.bom_level WHERE sourcing.fed_motor_id = <motor>) without governed metrics; parts here is the supplied component. Questions that only list or count ontology entities may use DIMENSIONS and the count metrics without filtering results. For why a governed OTD or fill rate missed, list line_outcomes (order_line_id, outcome, cause_code, cause, due_on, completed_on) filtered by line_outcomes.metric_id, line_outcomes.known_as_of, line_outcomes.month and the same part, site or region; these are the exact lines counted in the published answer. For order, receipt, shipment, promise, cost document or lot questions use purchase_orders, receipts, receipt_costs, receipt_lots, sales_orders, promises, shipments and allocations as DIMENSIONS with their count metrics; they are descriptive records, never a governed rate, and must not be divided or averaged into one. Do not combine promises with shipments or allocations in one query (they are separate branches of sales_orders); use sales_orders.original_promise_on, latest_promise_on and promise_revisions instead. Landed cost months are receipts.accepted_month.'
-  AI_QUESTION_CATEGORIZATION 'If the user says OTD or on-time delivery without also saying supplier, inbound, vendor, customer or outbound, consider the question UNCLEAR and ask whether they mean supplier on-time delivery or customer on-time delivery. Do not answer with both and do not guess. If the user says cost without saying landed cost, consider the question UNCLEAR and ask whether they mean landed cost per accepted unit. If the user says fill rate without saying unit, consider the question UNCLEAR and ask whether they mean unit fill rate (units shipped over units ordered); line and order fill rate are not governed. If the user asks about OTIF, on time in full, perfect order, shipping on time, customer rating, satisfaction, NPS, or merchandise plus outbound freight, reject the question: it is not a governed Concordia metric. Name the five governed metrics: supplier on-time delivery, customer on-time delivery, unit fill rate, days of inventory, landed cost per accepted unit. Questions about anything other than the synthetic Meridian Motion supply chain are out of scope.'
+  AI_SQL_GENERATION 'Always write SELECT * FROM SEMANTIC_VIEW(CONCORDIA.APP.SUPPLY_CHAIN_ONTOLOGY METRICS ... DIMENSIONS ... WHERE ...) with an optional ORDER BY outside; never query the semantic view with FROM, GROUP BY or AGG(). Every governed answer is one pre-computed row in results. Always filter results.metric_id to the governed metric ids asked about (INBOUND_SUPPLIER_OTD, OUTBOUND_CUSTOMER_OTD, UNIT_FILL_RATE, DAYS_INVENTORY, LANDED_COST_PER_ACCEPTED_UNIT), using IN for several, and include results.metric_id as a dimension. Always filter results.scope_level to exactly one value that matches the question: NETWORK for the whole business; PART for one part across all sites and regions; PART_SITE for a part at a site; PART_REGION for a part in a customer region; SITE, REGION, SUPPLIER or CUSTOMER when only that is named. Always filter results.known_as_of: use ''final'' unless the user asks what was known early, at the time, or on the 5th of the next month, then use ''early''. Never average, sum, subtract or otherwise recompute governed metrics across rows, months or scopes; to compare, return the rows side by side ordered by month. Months are first-of-month dates in results.month. Always return results.status, results.governed_value_text and results.access_note next to any governed metric. Aggregates without a site key are not filtered by persona site-detail entitlement and may include contributing sites whose detail is hidden. Days of inventory is a point-in-time snapshot published for every finished motor represented in inventory at site and part/network scopes: for final use month 2026-07-01, for early use the month asked. If a landed cost row has status INCOMPLETE its value is null by contract; report the status and reasons and do not substitute any number. Match parts by parts.part_id when an id like MM-440 or CP-1019 is given. For source-system item identities use part_aliases with parts; the relationship is SAME_AS. For which suppliers feed a motor, or through which components, answer with SEMANTIC_VIEW(CONCORDIA.APP.SUPPLY_CHAIN_ONTOLOGY DIMENSIONS suppliers.supplier_name, sourcing.via_component_id, parts.part_name, sourcing.bom_level WHERE sourcing.fed_motor_id = <motor>) without governed metrics; parts here is the supplied component. Questions that only list or count ontology entities may use DIMENSIONS and the count metrics without filtering results. For why a governed OTD or fill rate missed, list line_outcomes (order_line_id, outcome, cause_code, cause, due_on, completed_on) filtered by line_outcomes.metric_id, line_outcomes.known_as_of, line_outcomes.month and the same part, site or region; these are the exact lines counted in the published answer. For order, receipt, shipment, promise, cost document or lot questions use purchase_orders, receipts, receipt_costs, receipt_lots, sales_orders, promises, shipments and allocations as DIMENSIONS with their count metrics; they are descriptive records, never a governed rate, and must not be divided or averaged into one. Ship-to, returned units, average rating and complaint count are descriptive columns on sales_orders. Do not combine promises with shipments or allocations in one query (they are separate branches of sales_orders); use sales_orders.original_promise_on, latest_promise_on and promise_revisions instead. Landed cost months are receipts.accepted_month.'
+  AI_QUESTION_CATEGORIZATION 'If the user says OTD or on-time delivery without also saying supplier, inbound, vendor, customer or outbound, consider the question UNCLEAR and ask whether they mean supplier on-time delivery or customer on-time delivery. Do not answer with both and do not guess. If the user says cost without saying landed cost, consider the question UNCLEAR and ask whether they mean landed cost per accepted unit. If the user says fill rate without saying unit, consider the question UNCLEAR and ask whether they mean unit fill rate (units shipped over units ordered); line and order fill rate are not governed. If the user asks about OTIF, on time in full, perfect order, shipping on time, satisfaction, NPS, or merchandise plus outbound freight as a governed metric, reject the question: it is not a governed Concordia metric. Customer ratings, returns and complaints may be listed as descriptive records but must never be substituted for OTD or presented as governed KPIs. Name the five governed metrics: supplier on-time delivery, customer on-time delivery, unit fill rate, days of inventory, landed cost per accepted unit. Questions about anything other than the synthetic Meridian Motion supply chain are out of scope.'
   AI_VERIFIED_QUERIES (
     vq_01 AS (QUESTION 'Why did outbound customer OTD for MM-440 change in May 2026?' VERIFIED_BY '(STEWARD = concordia)' SQL
-      'SELECT * FROM SEMANTIC_VIEW(CONCORDIA.APP.SUPPLY_CHAIN_ONTOLOGY METRICS customer_on_time_delivery DIMENSIONS results.metric_id, results.month, results.scope_level, results.known_as_of, results.status, results.governed_value_text, parts.part_id, regions.region_name WHERE results.metric_id = ''OUTBOUND_CUSTOMER_OTD'' AND results.scope_level = ''PART_REGION'' AND results.known_as_of = ''final'' AND results.month IN (''2026-04-01'', ''2026-05-01'') AND parts.part_id = ''MM-440'' AND regions.region_name = ''Northeast'')'),
+      'SELECT * FROM SEMANTIC_VIEW(CONCORDIA.APP.SUPPLY_CHAIN_ONTOLOGY METRICS customer_on_time_delivery DIMENSIONS results.metric_id, results.month, results.scope_level, results.known_as_of, results.status, results.governed_value_text, results.access_note, parts.part_id, regions.region_name WHERE results.metric_id = ''OUTBOUND_CUSTOMER_OTD'' AND results.scope_level = ''PART_REGION'' AND results.known_as_of = ''final'' AND results.month IN (''2026-04-01'', ''2026-05-01'') AND parts.part_id = ''MM-440'' AND regions.region_name = ''Northeast'')'),
     vq_02 AS (QUESTION 'Inbound supplier OTD for MM-440 at Dayton in May 2026' VERIFIED_BY '(STEWARD = concordia)' SQL
-      'SELECT * FROM SEMANTIC_VIEW(CONCORDIA.APP.SUPPLY_CHAIN_ONTOLOGY METRICS supplier_on_time_delivery DIMENSIONS results.metric_id, results.month, results.scope_level, results.known_as_of, results.status, results.governed_value_text, parts.part_id, sites.site_name WHERE results.metric_id = ''INBOUND_SUPPLIER_OTD'' AND results.scope_level = ''PART_SITE'' AND results.known_as_of = ''final'' AND results.month = ''2026-05-01'' AND parts.part_id = ''MM-440'' AND sites.site_name = ''Dayton'')'),
+      'SELECT * FROM SEMANTIC_VIEW(CONCORDIA.APP.SUPPLY_CHAIN_ONTOLOGY METRICS supplier_on_time_delivery DIMENSIONS results.metric_id, results.month, results.scope_level, results.known_as_of, results.status, results.governed_value_text, results.access_note, parts.part_id, sites.site_name WHERE results.metric_id = ''INBOUND_SUPPLIER_OTD'' AND results.scope_level = ''PART_SITE'' AND results.known_as_of = ''final'' AND results.month = ''2026-05-01'' AND parts.part_id = ''MM-440'' AND sites.site_name = ''Dayton'')'),
     vq_03 AS (QUESTION 'Outbound customer OTD for MM-440 in the Northeast in May 2026' VERIFIED_BY '(STEWARD = concordia)' SQL
-      'SELECT * FROM SEMANTIC_VIEW(CONCORDIA.APP.SUPPLY_CHAIN_ONTOLOGY METRICS customer_on_time_delivery DIMENSIONS results.metric_id, results.month, results.scope_level, results.known_as_of, results.status, results.governed_value_text, parts.part_id, regions.region_name WHERE results.metric_id = ''OUTBOUND_CUSTOMER_OTD'' AND results.scope_level = ''PART_REGION'' AND results.known_as_of = ''final'' AND results.month = ''2026-05-01'' AND parts.part_id = ''MM-440'' AND regions.region_name = ''Northeast'')'),
+      'SELECT * FROM SEMANTIC_VIEW(CONCORDIA.APP.SUPPLY_CHAIN_ONTOLOGY METRICS customer_on_time_delivery DIMENSIONS results.metric_id, results.month, results.scope_level, results.known_as_of, results.status, results.governed_value_text, results.access_note, parts.part_id, regions.region_name WHERE results.metric_id = ''OUTBOUND_CUSTOMER_OTD'' AND results.scope_level = ''PART_REGION'' AND results.known_as_of = ''final'' AND results.month = ''2026-05-01'' AND parts.part_id = ''MM-440'' AND regions.region_name = ''Northeast'')'),
     vq_04 AS (QUESTION 'Unit fill rate for MM-440 in May 2026' VERIFIED_BY '(STEWARD = concordia)' SQL
-      'SELECT * FROM SEMANTIC_VIEW(CONCORDIA.APP.SUPPLY_CHAIN_ONTOLOGY METRICS unit_fill_rate DIMENSIONS results.metric_id, results.month, results.scope_level, results.known_as_of, results.status, results.governed_value_text, parts.part_id WHERE results.metric_id = ''UNIT_FILL_RATE'' AND results.scope_level = ''PART'' AND results.known_as_of = ''final'' AND results.month = ''2026-05-01'' AND parts.part_id = ''MM-440'')'),
+      'SELECT * FROM SEMANTIC_VIEW(CONCORDIA.APP.SUPPLY_CHAIN_ONTOLOGY METRICS unit_fill_rate DIMENSIONS results.metric_id, results.month, results.scope_level, results.known_as_of, results.status, results.governed_value_text, results.access_note, parts.part_id WHERE results.metric_id = ''UNIT_FILL_RATE'' AND results.scope_level = ''PART'' AND results.known_as_of = ''final'' AND results.month = ''2026-05-01'' AND parts.part_id = ''MM-440'')'),
     vq_05 AS (QUESTION 'Days inventory of MM-440 finished goods at Dayton' VERIFIED_BY '(STEWARD = concordia)' SQL
-      'SELECT * FROM SEMANTIC_VIEW(CONCORDIA.APP.SUPPLY_CHAIN_ONTOLOGY METRICS days_of_inventory DIMENSIONS results.metric_id, results.month, results.scope_level, results.known_as_of, results.status, results.governed_value_text, parts.part_id, sites.site_name WHERE results.metric_id = ''DAYS_INVENTORY'' AND results.scope_level = ''PART_SITE'' AND results.known_as_of = ''final'' AND results.month = ''2026-07-01'' AND parts.part_id = ''MM-440'' AND sites.site_name = ''Dayton'')'),
+      'SELECT * FROM SEMANTIC_VIEW(CONCORDIA.APP.SUPPLY_CHAIN_ONTOLOGY METRICS days_of_inventory DIMENSIONS results.metric_id, results.month, results.scope_level, results.known_as_of, results.status, results.governed_value_text, results.access_note, parts.part_id, sites.site_name WHERE results.metric_id = ''DAYS_INVENTORY'' AND results.scope_level = ''PART_SITE'' AND results.known_as_of = ''final'' AND results.month = ''2026-07-01'' AND parts.part_id = ''MM-440'' AND sites.site_name = ''Dayton'')'),
     vq_06 AS (QUESTION 'Landed cost per accepted unit for MM-440 at Dayton in May 2026' VERIFIED_BY '(STEWARD = concordia)' SQL
-      'SELECT * FROM SEMANTIC_VIEW(CONCORDIA.APP.SUPPLY_CHAIN_ONTOLOGY METRICS landed_cost_per_unit DIMENSIONS results.metric_id, results.month, results.scope_level, results.known_as_of, results.status, results.governed_value_text, parts.part_id, sites.site_name WHERE results.metric_id = ''LANDED_COST_PER_ACCEPTED_UNIT'' AND results.scope_level = ''PART_SITE'' AND results.known_as_of = ''final'' AND results.month = ''2026-05-01'' AND parts.part_id = ''MM-440'' AND sites.site_name = ''Dayton'')'),
+      'SELECT * FROM SEMANTIC_VIEW(CONCORDIA.APP.SUPPLY_CHAIN_ONTOLOGY METRICS landed_cost_per_unit DIMENSIONS results.metric_id, results.month, results.scope_level, results.known_as_of, results.status, results.governed_value_text, results.access_note, parts.part_id, sites.site_name WHERE results.metric_id = ''LANDED_COST_PER_ACCEPTED_UNIT'' AND results.scope_level = ''PART_SITE'' AND results.known_as_of = ''final'' AND results.month = ''2026-05-01'' AND parts.part_id = ''MM-440'' AND sites.site_name = ''Dayton'')'),
     vq_07 AS (QUESTION 'Landed cost for MM-440 at Dayton in May 2026 as known on 5 June' VERIFIED_BY '(STEWARD = concordia)' SQL
-      'SELECT * FROM SEMANTIC_VIEW(CONCORDIA.APP.SUPPLY_CHAIN_ONTOLOGY METRICS landed_cost_per_unit DIMENSIONS results.metric_id, results.month, results.scope_level, results.known_as_of, results.status, results.governed_value_text, results.reasons, parts.part_id, sites.site_name WHERE results.metric_id = ''LANDED_COST_PER_ACCEPTED_UNIT'' AND results.scope_level = ''PART_SITE'' AND results.known_as_of = ''early'' AND results.month = ''2026-05-01'' AND parts.part_id = ''MM-440'' AND sites.site_name = ''Dayton'')'),
+      'SELECT * FROM SEMANTIC_VIEW(CONCORDIA.APP.SUPPLY_CHAIN_ONTOLOGY METRICS landed_cost_per_unit DIMENSIONS results.metric_id, results.month, results.scope_level, results.known_as_of, results.status, results.governed_value_text, results.access_note, results.reasons, parts.part_id, sites.site_name WHERE results.metric_id = ''LANDED_COST_PER_ACCEPTED_UNIT'' AND results.scope_level = ''PART_SITE'' AND results.known_as_of = ''early'' AND results.month = ''2026-05-01'' AND parts.part_id = ''MM-440'' AND sites.site_name = ''Dayton'')'),
     vq_08 AS (QUESTION 'Compare landed cost for MM-440 at Dayton in May 2026 between 5 June and 15 July' ONBOARDING_QUESTION TRUE VERIFIED_BY '(STEWARD = concordia)' SQL
-      'SELECT * FROM SEMANTIC_VIEW(CONCORDIA.APP.SUPPLY_CHAIN_ONTOLOGY METRICS landed_cost_per_unit DIMENSIONS results.metric_id, results.month, results.scope_level, results.known_as_of, results.status, results.governed_value_text, results.reasons, parts.part_id, sites.site_name WHERE results.metric_id = ''LANDED_COST_PER_ACCEPTED_UNIT'' AND results.scope_level = ''PART_SITE'' AND results.known_as_of IN (''early'', ''final'') AND results.month = ''2026-05-01'' AND parts.part_id = ''MM-440'' AND sites.site_name = ''Dayton'')'),
+      'SELECT * FROM SEMANTIC_VIEW(CONCORDIA.APP.SUPPLY_CHAIN_ONTOLOGY METRICS landed_cost_per_unit DIMENSIONS results.metric_id, results.month, results.scope_level, results.known_as_of, results.status, results.governed_value_text, results.access_note, results.reasons, parts.part_id, sites.site_name WHERE results.metric_id = ''LANDED_COST_PER_ACCEPTED_UNIT'' AND results.scope_level = ''PART_SITE'' AND results.known_as_of IN (''early'', ''final'') AND results.month = ''2026-05-01'' AND parts.part_id = ''MM-440'' AND sites.site_name = ''Dayton'')'),
     vq_09 AS (QUESTION 'Outbound customer OTD by region for May 2026' ONBOARDING_QUESTION TRUE VERIFIED_BY '(STEWARD = concordia)' SQL
-      'SELECT * FROM SEMANTIC_VIEW(CONCORDIA.APP.SUPPLY_CHAIN_ONTOLOGY METRICS customer_on_time_delivery DIMENSIONS results.metric_id, results.month, results.scope_level, results.known_as_of, results.status, results.governed_value_text, regions.region_name WHERE results.metric_id = ''OUTBOUND_CUSTOMER_OTD'' AND results.scope_level = ''REGION'' AND results.known_as_of = ''final'' AND results.month = ''2026-05-01'')'),
+      'SELECT * FROM SEMANTIC_VIEW(CONCORDIA.APP.SUPPLY_CHAIN_ONTOLOGY METRICS customer_on_time_delivery DIMENSIONS results.metric_id, results.month, results.scope_level, results.known_as_of, results.status, results.governed_value_text, results.access_note, regions.region_name WHERE results.metric_id = ''OUTBOUND_CUSTOMER_OTD'' AND results.scope_level = ''REGION'' AND results.known_as_of = ''final'' AND results.month = ''2026-05-01'')'),
     vq_10 AS (QUESTION 'Inbound supplier OTD trend for Dayton' VERIFIED_BY '(STEWARD = concordia)' SQL
-      'SELECT * FROM SEMANTIC_VIEW(CONCORDIA.APP.SUPPLY_CHAIN_ONTOLOGY METRICS supplier_on_time_delivery DIMENSIONS results.metric_id, results.month, results.scope_level, results.known_as_of, results.status, results.governed_value_text, sites.site_name WHERE results.metric_id = ''INBOUND_SUPPLIER_OTD'' AND results.scope_level = ''SITE'' AND results.known_as_of = ''final'' AND sites.site_name = ''Dayton'')'),
+      'SELECT * FROM SEMANTIC_VIEW(CONCORDIA.APP.SUPPLY_CHAIN_ONTOLOGY METRICS supplier_on_time_delivery DIMENSIONS results.metric_id, results.month, results.scope_level, results.known_as_of, results.status, results.governed_value_text, results.access_note, sites.site_name WHERE results.metric_id = ''INBOUND_SUPPLIER_OTD'' AND results.scope_level = ''SITE'' AND results.known_as_of = ''final'' AND sites.site_name = ''Dayton'')'),
     vq_11 AS (QUESTION 'Network days inventory for MM-440 finished goods' VERIFIED_BY '(STEWARD = concordia)' SQL
-      'SELECT * FROM SEMANTIC_VIEW(CONCORDIA.APP.SUPPLY_CHAIN_ONTOLOGY METRICS days_of_inventory DIMENSIONS results.metric_id, results.month, results.scope_level, results.known_as_of, results.status, results.governed_value_text, parts.part_id WHERE results.metric_id = ''DAYS_INVENTORY'' AND results.scope_level = ''PART'' AND results.known_as_of = ''final'' AND results.month = ''2026-07-01'' AND parts.part_id = ''MM-440'')'),
+      'SELECT * FROM SEMANTIC_VIEW(CONCORDIA.APP.SUPPLY_CHAIN_ONTOLOGY METRICS days_of_inventory DIMENSIONS results.metric_id, results.month, results.scope_level, results.known_as_of, results.status, results.governed_value_text, results.access_note, parts.part_id WHERE results.metric_id = ''DAYS_INVENTORY'' AND results.scope_level = ''PART'' AND results.known_as_of = ''final'' AND results.month = ''2026-07-01'' AND parts.part_id = ''MM-440'')'),
     vq_12 AS (QUESTION 'Unit fill rate by region for May 2026' VERIFIED_BY '(STEWARD = concordia)' SQL
-      'SELECT * FROM SEMANTIC_VIEW(CONCORDIA.APP.SUPPLY_CHAIN_ONTOLOGY METRICS unit_fill_rate DIMENSIONS results.metric_id, results.month, results.scope_level, results.known_as_of, results.status, results.governed_value_text, regions.region_name WHERE results.metric_id = ''UNIT_FILL_RATE'' AND results.scope_level = ''REGION'' AND results.known_as_of = ''final'' AND results.month = ''2026-05-01'')'),
+      'SELECT * FROM SEMANTIC_VIEW(CONCORDIA.APP.SUPPLY_CHAIN_ONTOLOGY METRICS unit_fill_rate DIMENSIONS results.metric_id, results.month, results.scope_level, results.known_as_of, results.status, results.governed_value_text, results.access_note, regions.region_name WHERE results.metric_id = ''UNIT_FILL_RATE'' AND results.scope_level = ''REGION'' AND results.known_as_of = ''final'' AND results.month = ''2026-05-01'')'),
     vq_13 AS (QUESTION 'Compare supplier on-time delivery, customer on-time delivery and unit fill rate for MM-440 in May 2026' ONBOARDING_QUESTION TRUE VERIFIED_BY '(STEWARD = concordia)' SQL
-      'SELECT * FROM SEMANTIC_VIEW(CONCORDIA.APP.SUPPLY_CHAIN_ONTOLOGY METRICS governed_value DIMENSIONS results.metric_id, results.month, results.scope_level, results.known_as_of, results.status, results.governed_value_text, parts.part_id WHERE results.metric_id IN (''INBOUND_SUPPLIER_OTD'', ''OUTBOUND_CUSTOMER_OTD'', ''UNIT_FILL_RATE'') AND results.scope_level = ''PART'' AND results.known_as_of = ''final'' AND results.month = ''2026-05-01'' AND parts.part_id = ''MM-440'')'),
+      'SELECT * FROM SEMANTIC_VIEW(CONCORDIA.APP.SUPPLY_CHAIN_ONTOLOGY METRICS governed_value DIMENSIONS results.metric_id, results.month, results.scope_level, results.known_as_of, results.status, results.governed_value_text, results.access_note, parts.part_id WHERE results.metric_id IN (''INBOUND_SUPPLIER_OTD'', ''OUTBOUND_CUSTOMER_OTD'', ''UNIT_FILL_RATE'') AND results.scope_level = ''PART'' AND results.known_as_of = ''final'' AND results.month = ''2026-05-01'' AND parts.part_id = ''MM-440'')'),
     vq_14 AS (QUESTION 'Which suppliers feed motor MM-401, and through which components?' ONBOARDING_QUESTION TRUE VERIFIED_BY '(STEWARD = concordia)' SQL
       'SELECT * FROM SEMANTIC_VIEW(CONCORDIA.APP.SUPPLY_CHAIN_ONTOLOGY DIMENSIONS suppliers.supplier_name, sourcing.via_component_id, parts.part_name, sourcing.bom_level WHERE sourcing.fed_motor_id = ''MM-401'')'),
     vq_15 AS (QUESTION 'Show the product-level supplier, component, home plant, customer and region paths for motor MM-401' VERIFIED_BY '(STEWARD = concordia)' SQL
@@ -642,7 +686,11 @@ CREATE OR REPLACE SEMANTIC VIEW APP.SUPPLY_CHAIN_ONTOLOGY
     vq_20 AS (QUESTION 'Which cost documents make up landed cost for MM-440 receipts at Dayton in May 2026?' VERIFIED_BY '(STEWARD = concordia)' SQL
       'SELECT * FROM SEMANTIC_VIEW(CONCORDIA.APP.SUPPLY_CHAIN_ONTOLOGY DIMENSIONS receipts.receipt_id, receipts.accepted_on, receipt_costs.cost_document_id, receipt_costs.cost_kind, receipt_costs.source_document_id, receipt_costs.currency, receipt_costs.cost_amount, receipt_costs.amount_state, parts.part_id, sites.site_name WHERE parts.part_id = ''MM-440'' AND sites.site_name = ''Dayton'' AND receipts.accepted_month = ''2026-05-01'')'),
     vq_21 AS (QUESTION 'Customer on-time delivery by site for May 2026' VERIFIED_BY '(STEWARD = concordia)' SQL
-      'SELECT * FROM SEMANTIC_VIEW(CONCORDIA.APP.SUPPLY_CHAIN_ONTOLOGY METRICS customer_on_time_delivery DIMENSIONS results.metric_id, results.month, results.scope_level, results.known_as_of, results.status, results.governed_value_text, sites.site_name WHERE results.metric_id = ''OUTBOUND_CUSTOMER_OTD'' AND results.scope_level = ''SITE'' AND results.known_as_of = ''final'' AND results.month = ''2026-05-01'')')
+      'SELECT * FROM SEMANTIC_VIEW(CONCORDIA.APP.SUPPLY_CHAIN_ONTOLOGY METRICS customer_on_time_delivery DIMENSIONS results.metric_id, results.month, results.scope_level, results.known_as_of, results.status, results.governed_value_text, results.access_note, sites.site_name WHERE results.metric_id = ''OUTBOUND_CUSTOMER_OTD'' AND results.scope_level = ''SITE'' AND results.known_as_of = ''final'' AND results.month = ''2026-05-01'')'),
+    vq_22 AS (QUESTION 'Show MM-440 customer order ship-to locations, returns, ratings and complaints for May 2026' VERIFIED_BY '(STEWARD = concordia)' SQL
+      'SELECT * FROM SEMANTIC_VIEW(CONCORDIA.APP.SUPPLY_CHAIN_ONTOLOGY DIMENSIONS sales_orders.so_line_id, sales_orders.ship_to_id, sales_orders.ship_to_country, sales_orders.original_promise_on, sales_orders.returned_qty, sales_orders.rating_count, sales_orders.average_rating, sales_orders.complaint_count, sales_orders.latest_feedback_on, parts.part_id, customers.customer_name, regions.region_name WHERE parts.part_id = ''MM-440'' AND sales_orders.promise_month = ''2026-05-01'')'),
+    vq_23 AS (QUESTION 'Show the source-system item codes mapped to MM-440' VERIFIED_BY '(STEWARD = concordia)' SQL
+      'SELECT * FROM SEMANTIC_VIEW(CONCORDIA.APP.SUPPLY_CHAIN_ONTOLOGY DIMENSIONS part_aliases.source_system, part_aliases.source_item_key, part_aliases.match_method, parts.part_id, parts.part_name WHERE parts.part_id = ''MM-440'')')
   );
 
 
@@ -931,7 +979,7 @@ DECLARE
   roles ARRAY DEFAULT ARRAY_CONSTRUCT('CONCORDIA_PLANNER', 'CONCORDIA_PROCUREMENT', 'CONCORDIA_LOGISTICS', 'CONCORDIA_EXECUTIVE',
                                       'CONCORDIA_AUDITOR', 'CONCORDIA_APP_OWNER');
   views ARRAY DEFAULT ARRAY_CONSTRUCT('SV_RESULT', 'SV_PART', 'SV_SITE', 'SV_REGION', 'SV_SUPPLIER', 'SV_CUSTOMER', 'SV_METRIC',
-                                      'SV_SUPPLY', 'SV_BOM', 'SV_CAPABILITY', 'SV_SOURCING', 'SV_FLOW_TRACE', 'SV_IOT_LOT',
+                                      'SV_SUPPLY', 'SV_PART_ALIAS', 'SV_BOM', 'SV_CAPABILITY', 'SV_SOURCING', 'SV_FLOW_TRACE', 'SV_IOT_LOT',
                                       'SV_SUBSTITUTION', 'SV_CONSUMPTION', 'SV_LINE_OUTCOME', 'SV_PO_LINE', 'SV_RECEIPT',
                                       'SV_RECEIPT_COST', 'SV_RECEIPT_LOT', 'SV_SO_LINE', 'SV_PROMISE', 'SV_SHIPMENT', 'SV_ALLOCATION');
 BEGIN

@@ -113,8 +113,19 @@ def test_semantic_runner_and_verified_question_regressions():
     from catalog import verified_queries
 
     catalog = dict(re.findall(r"^ \('(VQ-\d\d)','((?:[^']|'')*)'", gov, flags=re.M))
-    mirrored = {qid: question for qid, question, _ in verified_queries(semantic_sql)}
-    assert len(catalog) == 21 and mirrored == catalog
+    parsed = verified_queries(semantic_sql)
+    mirrored = {qid: question for qid, question, _ in parsed}
+    assert len(catalog) == 23 and mirrored == catalog
+    verified_sql = {qid: sql for qid, _, sql in parsed}
+    for question_id in tuple(f"VQ-{n:02d}" for n in range(1, 14)) + ("VQ-21",):
+        assert "results.access_note" in verified_sql[question_id]
+    assert "Aggregate is not filtered by persona site-detail entitlement" in semantic_sql
+    assert "Enterprise aggregate: includes all sites" not in semantic_sql
+    assert "('customer rating', 'REJECT'" not in gov
+    assert "may be listed as descriptive records" in semantic_sql
+    assert "part_aliases.source_item_key AS SOURCE_KEY WITH SYNONYMS = ('source item code', 'material number')" in semantic_sql
+    assert 'scope_word = "region" if geo else "enterprise"' in app
+    assert "site-detail entitlement does not redefine this number" in app
     assert "FROM CONCORDIA.APP.V_VERIFIED_QUESTION" in app and "Landed cost per accepted unit for MM-440 at Dayton in May 2026, early" not in app
     semantic_view = semantic_sql.split("CREATE OR REPLACE SEMANTIC VIEW", 1)[1].split("AI_SQL_GENERATION", 1)[0]
     governed = re.findall(r"results\.(\w+) AS (.+)", semantic_view.split("METRICS (", 1)[1])

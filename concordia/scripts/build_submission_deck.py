@@ -6,6 +6,7 @@ Every figure on the slides is copied from data/generated/verification.json or th
 
 from __future__ import annotations
 
+import io
 import json
 import shutil
 from pathlib import Path
@@ -167,48 +168,85 @@ def slide_problem(slide):
 
 
 def slide_architecture(slide):
-    title(slide, "Architecture: one governed path from source record to answer",
-          "Snowflake-native end to end · the language model routes and narrates, SQL computes every number")
+    title(slide, "The whole picture: governed records to evidenced answers",
+          "One Snowflake-native path · the model interprets; SQL calculates and proves")
+    text(slide, 2.0, 1.38, 6.0, 0.2, "SNOWFLAKE", size=8.5, bold=True, color=SLATE, align=PP_ALIGN.CENTER)
+
     cols = [
-        (0.35, 1.45, "SOURCES", None),
-        (2.05, 1.75, "LAND", ["RAW_RECORD", "append-only, hashed", "Stream + Task", f"Quarantine · {FACTS['quarantined']}"]),
-        (4.1, 1.85, "CORE", ["Identity resolution", "Ontology: part · party ·", "facility · geography", "Ledger + knowledge graph", "Metric SQL  M1–M5"]),
-        (6.25, 1.65, "APP", ["Published grid", f"{FACTS['as_of_points']} as-of points", "Persona-masked", "secure functions", "Semantic view"]),
-        (8.2, 1.45, "EXPERIENCE", None),
+        (0.35, 1.35, "SOURCES", SLATE),
+        (1.95, 1.35, "LAND", BLUE),
+        (3.55, 2.05, "CORE", NAVY),
+        (5.85, 1.75, "APP", TEAL),
+        (7.85, 1.80, "EXPERIENCE", BLUE),
     ]
-    top, height = 1.62, 2.7
-    header_fill = {"SOURCES": SLATE, "LAND": BLUE, "CORE": NAVY, "APP": TEAL, "EXPERIENCE": BLUE}
-    for x, w, name, lines in cols:
-        body = box(slide, x, top, w, height, fill=WHITE, line=LINE, radius=0.06)
-        body.name = f"{name} column"
-        head = box(slide, x, top, w, 0.38, fill=header_fill[name], line=None, radius=0.25)
-        label(head, [({"t": name, "bold": True, "size": 11, "color": WHITE},)])
-        if lines:
-            text(slide, x + 0.12, top + 0.52, w - 0.24, height - 0.6, [({"t": line},) for line in lines], size=10, spacing=3,
-                 align=PP_ALIGN.LEFT)
-    y = top + 0.5
-    for system, what in (("ERP", "orders · costs"), ("MES", "production"), ("WMS", "stock · holds"),
-                         ("TMS", "shipments"), ("CRM", "promises"), ("IoT", "docks · lots")):
-        chip = box(slide, 0.47, y, 1.21, 0.38, fill=MIST, line=None, radius=0.2)
-        label(chip, [({"t": system + "  ", "bold": True, "size": 10}, {"t": what, "size": 8.5, "color": SLATE})])
-        y += 0.355
-    y = top + 0.52
-    for head, sub in (("Streamlit in Snowflake", "7 pages, owner role"), ("Ask Concordia", "Analyst + SQL guard"),
-                      ("Cortex Analyst", "ontology-first answers")):
-        chip = box(slide, 8.3, y, 1.25, 0.6, fill=BLUE_TINT, line=None, radius=0.15)
-        label(chip, [({"t": head, "bold": True, "size": 9.5, "color": BLUE},), ({"t": sub, "size": 8.5, "color": SLATE},)])
-        y += 0.7
+    top, height = 1.62, 2.67
+    for x, w, name, fill in cols:
+        body = box(slide, x, top, w, height, fill=WHITE, line=LINE, radius=0.06, name=f"{name} layer")
+        head = box(slide, x, top, w, 0.36, fill=fill, line=None, radius=0.22)
+        label(head, [({"t": name, "bold": True, "size": 10.5, "color": WHITE},)])
+
+    source_items = (("ERP", "orders · cost"), ("MES", "production"), ("WMS", "stock · receipts"),
+                    ("TMS", "shipments"), ("CRM", "promises · feedback"), ("IoT", "dock · lots"))
+    for i, (system, what) in enumerate(source_items):
+        y = 2.08 + i * 0.34
+        text(slide, 0.48, y, 0.36, 0.22, system, size=8.8, bold=True, color=NAVY)
+        text(slide, 0.88, y, 0.67, 0.22, what, size=8.0, color=SLATE)
+    text(slide, 0.48, 3.98, 1.05, 0.3, FACTS["raw_records"] + " synthetic records", size=8.0, bold=True, color=AMBER)
+
+    land_nodes = [
+        ("RAW_RECORD", "append-only + hash"),
+        ("Stream", "new rows only"),
+        ("Resolve task", "automatic"),
+        ("Quarantine", FACTS["quarantined"] + " refused"),
+    ]
+    for i, (head, sub) in enumerate(land_nodes):
+        n = box(slide, 2.08, 2.06 + i * 0.5, 1.09, 0.42, fill=BLUE_TINT, line=None, radius=0.14)
+        label(n, [({"t": head, "bold": True, "size": 8.8, "color": BLUE},),
+                  ({"t": sub, "size": 7.8, "color": SLATE},)], margin=0.04)
+
+    core_nodes = [
+        ("Canonical model", "part · party · site · region"),
+        ("Identity resolution", FACTS["identity_aliases"] + " SAME_AS aliases"),
+        ("Event ledger + graph", FACTS["graph_nodes"] + " nodes · " + FACTS["graph_edges"] + " edges"),
+        ("5 metric functions", "the only numeric authority"),
+    ]
+    for i, (head, sub) in enumerate(core_nodes):
+        n = box(slide, 3.70, 2.06 + i * 0.5, 1.75, 0.42, fill=MIST, line=None, radius=0.14)
+        label(n, [({"t": head, "bold": True, "size": 8.8, "color": NAVY},),
+                  ({"t": sub, "size": 7.8, "color": SLATE},)], margin=0.04)
+
+    app_nodes = [
+        ("Published grid", FACTS["result_rows"] + " governed answers"),
+        ("Semantic ontology", FACTS["verified_queries"] + " verified questions"),
+        ("Secure interfaces", "ASK · evidence · guarded SQL"),
+        ("Policies", "site rows · cost · WITHHELD"),
+    ]
+    for i, (head, sub) in enumerate(app_nodes):
+        n = box(slide, 5.99, 2.06 + i * 0.5, 1.47, 0.42, fill=TEAL_TINT, line=None, radius=0.14)
+        label(n, [({"t": head, "bold": True, "size": 8.8, "color": TEAL},),
+                  ({"t": sub, "size": 7.7, "color": SLATE},)], margin=0.04)
+
+    experience_nodes = [
+        ("Streamlit", "7 role-aware pages"),
+        ("Cortex Analyst", "business question → SQL"),
+        ("Parity guard", "exact published cell"),
+        ("Evidence", "definition · counts · reasons"),
+    ]
+    for i, (head, sub) in enumerate(experience_nodes):
+        n = box(slide, 7.99, 2.06 + i * 0.5, 1.52, 0.42, fill=BLUE_TINT, line=None, radius=0.14)
+        label(n, [({"t": head, "bold": True, "size": 8.8, "color": BLUE},),
+                  ({"t": sub, "size": 7.7, "color": SLATE},)], margin=0.04)
+
     mid = top + height / 2
-    for x_from, x_to in ((1.8, 2.05), (3.8, 4.1), (5.95, 6.25), (7.9, 8.2)):
+    for x_from, x_to in ((1.70, 1.95), (3.30, 3.55), (5.60, 5.85), (7.60, 7.85)):
         arrow(slide, x_from + 0.02, mid, x_to - 0.02, mid, color=SLATE, width=2)
-    gov = box(slide, 2.05, 4.45, 7.6, 0.58, fill=AMBER_TINT, line=None, radius=0.15)
-    gov.name = "GOV band"
-    label(gov, [({"t": "GOV   ", "bold": True, "size": 11, "color": AMBER},
-                 {"t": "metric contracts (versioned, hashed) · entitlements · rejected aliases · evidence · query audit · pipeline runs",
-                  "size": 10, "color": NAVY})], align=PP_ALIGN.LEFT, margin=0.15)
-    text(slide, 0.35, 4.45, 1.55, 0.6, [({"t": "Synthetic world", "bold": True, "size": 9.5},),
-                                         ({"t": "seeded simulator, 2 batches", "size": 8.5, "color": SLATE},)], anchor=MSO_ANCHOR.MIDDLE)
-    footnote(slide, "Roles: ADMIN builds, TRANSFORM runs the task, APP_OWNER (never ACCOUNTADMIN) owns the app and uses governed interfaces.")
+
+    gov = box(slide, 0.35, 4.46, 9.30, 0.55, fill=AMBER_TINT, line=None, radius=0.12, name="Governance and proof rail")
+    label(gov, [({"t": "GOVERNANCE + PROOF  ", "bold": True, "size": 9.5, "color": AMBER},
+                 {"t": "versioned contracts · entitlements · row access · masking · audit · as-of replay · "
+                       + FACTS["golden"] + " golden · " + FACTS["grid"] + " grid · " + FACTS["live_tests"] + " live tests",
+                  "size": 8.8, "color": NAVY})], align=PP_ALIGN.LEFT, margin=0.12)
+    footnote(slide, "The model interprets and narrates. SQL functions compute; the guard proves each metric value. All data is synthetic.")
 
 
 def slide_solution(slide):
@@ -224,7 +262,7 @@ def slide_solution(slide):
         ("2", "Ask over the ontology", "Cortex Analyst generates semantic SQL; a guard proves metric rows against the exact published scope."),
         ("3", "Ambiguity is refused", "Bare “OTD” asks inbound or outbound. “OTIF” is rejected. Missing cost stays incomplete."),
         ("4", "As-of replay", "What was known on the 5th versus final, and what each late load restated."),
-        ("5", "Cross-domain evidence", "Supplier-to-customer paths, substitutions, lots, production consumption and synthetic IoT dock events."),
+        ("5", "Cross-domain evidence", "Orders, receipts, cost documents, shipments, allocated lots, ship-to, returns, ratings and source aliases."),
     ]
     y = 1.55
     for n, head, body in features:
@@ -252,7 +290,7 @@ def slide_end_to_end(slide):
     stats = [(FACTS["golden"], "golden checks", "SQL equals the independent Python reference"),
              (FACTS["grid"], "grid samples", "published rows equal a live function call"),
              (FACTS["hero"], "hero checks", "including the restated landed cost"),
-             (FACTS["security"], "security checks", "masking, alias refusal, role isolation")]
+             (FACTS["security"], "security checks", "masking, site row access, alias refusal, role isolation")]
     for i, (big, head, sub) in enumerate(stats):
         cx = 0.45 + i * 2.3
         card = box(slide, cx, 2.4, 2.15, 1.25, fill=MIST, line=None, radius=0.08)
@@ -298,10 +336,8 @@ def main(argv: list[str]) -> None:
     content_bg.write_bytes(template.slides[2].shapes[0].image.blob)
     thanks_bg.write_bytes(template.slides[5].shapes[0].image.blob)
 
-    backup = DECK.with_name(DECK.stem + ".before-rebuild.pptx")
-    if not backup.exists():
-        shutil.copyfile(DECK, backup)
-    deck = Presentation(str(backup))
+    # Read the source deck fully before replacing it so a failed save cannot destroy slide 1.
+    deck = Presentation(io.BytesIO(DECK.read_bytes()))
     drop_slides_after_first(deck)
     blank = next(layout for layout in deck.slide_layouts if layout.name.upper() == "BLANK")
     for builder, bg in ((slide_problem, content_bg), (slide_architecture, content_bg), (slide_solution, content_bg),

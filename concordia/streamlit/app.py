@@ -658,6 +658,10 @@ def page_command_center():
     st.markdown(f'<div class="section">{esc(month_label(month))} · {esc(item_label(item))}'
                 f'{" · " + esc(FAC_NAMES.get(facility, "")) if facility else ""}{" · " + esc(GEO_NAMES.get(geo, "")) if geo else ""}</div>',
                 unsafe_allow_html=True)
+    if persona == "LOGISTICS" and facility is None:
+        scope_word = "region" if geo else "enterprise"
+        st.info(f"Shared {scope_word} aggregate: site-detail entitlement does not redefine this number. "
+                "It may include contributions from sites whose detail rows Logistics cannot inspect.")
     cols = st.columns(5)
     for col, metric in zip(cols, METRICS):
         row = card_row(data, metric, kind, month)

@@ -259,7 +259,7 @@ Each governed metric is `IFF(COUNT(key) = 1, MAX(value), NULL)`: it returns the
 published value only when exactly one published answer matches, so an
 unfiltered or under-filtered query returns null rather than an arbitrary row.
 
-The 21 verified questions are one catalog. Each `vq_NN` entry on the semantic
+The 23 verified questions are one catalog. Each `vq_NN` entry on the semantic
 view has the same id and text as `GOV.VERIFIED_QUESTION` row `VQ-NN`; deploy
 fails if they differ, mirrors the SQL into `ANALYST_SQL`, and the app reads both
 through `APP.ANALYST_VERIFIED`.

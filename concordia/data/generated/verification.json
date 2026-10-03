@@ -20,9 +20,9 @@
         "status": "COMPLETE",
         "display": "0.2500",
         "narration_source": "MODEL",
-        "narration": "Outbound customer OTD for MM-440 changed in May 2026 because the percentage of on-time deliveries decreased from 100.00% to 25.00%. This change is based on synthetic data. The number of affected units increased from 0 to 30.",
+        "narration": "Outbound customer OTD for MM-440 changed in May 2026 because the percentage of on-time deliveries decreased from 100.00% to 25.00%. This change is based on synthetic data. The status is COMPLETE, indicating that the data is final and verified.",
         "note": null,
-        "seconds": 16.5
+        "seconds": 11.6
       },
       {
         "question": "Compare landed cost for MM-440 at Dayton in May 2026 between 5 June and 15 July",
@@ -32,7 +32,7 @@
         "narration_source": "TEMPLATE",
         "narration": "Landed cost per accepted unit for 2026-05-01 to 2026-05-31 is 12.5000 (237500 / 190.000000), as of 2026-07-15T23:59:59Z. As of 2026-06-05T23:59:59Z it was INCOMPLETE. Synthetic data.",
         "note": "rejected model numbers ['12.50']",
-        "seconds": 14.8
+        "seconds": 16.4
       },
       {
         "question": "How did inbound supplier on-time delivery look at Stuttgart in March 2026?",
@@ -40,9 +40,9 @@
         "status": "COMPLETE",
         "display": "0.5065",
         "narration_source": "MODEL",
-        "narration": "Inbound supplier on-time delivery at Stuttgart in March 2026 was 50.65%. This is based on 39 on-time deliveries out of 77 total commitments. The data is synthetic.",
+        "narration": "Inbound supplier on-time delivery at Stuttgart in March 2026 was 50.65%. This data is synthetic. The status is complete, indicating that the data is final and no further updates are expected.",
         "note": null,
-        "seconds": 10.5
+        "seconds": 9.8
       }
     ],
     "passed": true
@@ -266,7 +266,7 @@
       "IOT_EVENTS": 10266,
       "LOTS": 26927,
       "INVENTORY_PARTS": 40,
-      "VERIFIED_QUERIES": 21,
+      "VERIFIED_QUERIES": 23,
       "CATALOG_WITHOUT_SQL": 0
     },
     "m4_grid_parity": [
@@ -381,6 +381,7 @@
           "KNOWN_AS_OF",
           "STATUS",
           "GOVERNED_VALUE_TEXT",
+          "ACCESS_NOTE",
           "REASONS",
           "PART_ID",
           "SITE_NAME"
@@ -398,6 +399,7 @@
           "KNOWN_AS_OF",
           "STATUS",
           "GOVERNED_VALUE_TEXT",
+          "ACCESS_NOTE",
           "PART_ID"
         ]
       },
@@ -413,6 +415,7 @@
           "KNOWN_AS_OF",
           "STATUS",
           "GOVERNED_VALUE_TEXT",
+          "ACCESS_NOTE",
           "SITE_NAME"
         ]
       },
@@ -428,6 +431,7 @@
           "KNOWN_AS_OF",
           "STATUS",
           "GOVERNED_VALUE_TEXT",
+          "ACCESS_NOTE",
           "PART_ID",
           "SITE_NAME"
         ]
@@ -444,6 +448,7 @@
           "KNOWN_AS_OF",
           "STATUS",
           "GOVERNED_VALUE_TEXT",
+          "ACCESS_NOTE",
           "PART_ID",
           "SITE_NAME"
         ]
@@ -460,6 +465,7 @@
           "KNOWN_AS_OF",
           "STATUS",
           "GOVERNED_VALUE_TEXT",
+          "ACCESS_NOTE",
           "SITE_NAME"
         ]
       },
@@ -475,6 +481,7 @@
           "KNOWN_AS_OF",
           "STATUS",
           "GOVERNED_VALUE_TEXT",
+          "ACCESS_NOTE",
           "REASONS",
           "PART_ID",
           "SITE_NAME"
@@ -492,6 +499,7 @@
           "KNOWN_AS_OF",
           "STATUS",
           "GOVERNED_VALUE_TEXT",
+          "ACCESS_NOTE",
           "PART_ID",
           "SITE_NAME"
         ]
@@ -508,6 +516,7 @@
           "KNOWN_AS_OF",
           "STATUS",
           "GOVERNED_VALUE_TEXT",
+          "ACCESS_NOTE",
           "PART_ID"
         ]
       },
@@ -523,6 +532,7 @@
           "KNOWN_AS_OF",
           "STATUS",
           "GOVERNED_VALUE_TEXT",
+          "ACCESS_NOTE",
           "REGION_NAME"
         ]
       },
@@ -538,6 +548,7 @@
           "KNOWN_AS_OF",
           "STATUS",
           "GOVERNED_VALUE_TEXT",
+          "ACCESS_NOTE",
           "PART_ID",
           "REGION_NAME"
         ]
@@ -556,6 +567,25 @@
           "ITEM_ID",
           "FACILITY_NAME",
           "TEMPERATURE_C"
+        ]
+      },
+      {
+        "question": "Show MM-440 customer order ship-to locations, returns, ratings and complaints for May 2026",
+        "verdict": "DESCRIPTIVE",
+        "rows": 4,
+        "columns": [
+          "SO_LINE_ID",
+          "SHIP_TO_ID",
+          "SHIP_TO_COUNTRY",
+          "ORIGINAL_PROMISE_ON",
+          "RETURNED_QTY",
+          "RATING_COUNT",
+          "AVERAGE_RATING",
+          "COMPLAINT_COUNT",
+          "LATEST_FEEDBACK_ON",
+          "PART_ID",
+          "CUSTOMER_NAME",
+          "REGION_NAME"
         ]
       },
       {
@@ -591,6 +621,18 @@
         ]
       },
       {
+        "question": "Show the source-system item codes mapped to MM-440",
+        "verdict": "DESCRIPTIVE",
+        "rows": 4,
+        "columns": [
+          "SOURCE_SYSTEM",
+          "SOURCE_ITEM_KEY",
+          "MATCH_METHOD",
+          "PART_ID",
+          "PART_NAME"
+        ]
+      },
+      {
         "question": "Trace the MM-440 sales order lines, promise dates, shipments and lots for the Northeast in May 2026",
         "verdict": "DESCRIPTIVE",
         "rows": 5,
@@ -623,6 +665,7 @@
           "KNOWN_AS_OF",
           "STATUS",
           "GOVERNED_VALUE_TEXT",
+          "ACCESS_NOTE",
           "REGION_NAME"
         ]
       },
@@ -638,6 +681,7 @@
           "KNOWN_AS_OF",
           "STATUS",
           "GOVERNED_VALUE_TEXT",
+          "ACCESS_NOTE",
           "PART_ID"
         ]
       },
@@ -700,6 +744,7 @@
           "KNOWN_AS_OF",
           "STATUS",
           "GOVERNED_VALUE_TEXT",
+          "ACCESS_NOTE",
           "PART_ID",
           "REGION_NAME"
         ]

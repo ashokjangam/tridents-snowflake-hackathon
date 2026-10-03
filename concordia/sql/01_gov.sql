@@ -124,8 +124,7 @@ INSERT INTO GOV.REJECTED_ALIAS SELECT column1, column2, PARSE_JSON(column3), col
  ('fill rate', 'CLARIFY', '["UNIT_FILL_RATE"]', 'Maps to unit fill rate only after explicit confirmation.'),
  ('inventory days', 'CLARIFY', '["DAYS_INVENTORY"]', 'Clarify inventory class and facility or network scope.'),
  ('cost', 'CLARIFY', '["LANDED_COST_PER_ACCEPTED_UNIT"]', 'Insufficient: ask which cost.'),
- ('merchandise plus outbound freight', 'REJECT', '[]', 'Not landed cost.'),
- ('customer rating', 'REJECT', '[]', 'Ratings are not delivery performance.');
+ ('merchandise plus outbound freight', 'REJECT', '[]', 'Not landed cost.');
 
 CREATE OR REPLACE TABLE GOV.ONTOLOGY_TERM (TERM VARCHAR, KIND VARCHAR, DEFINITION VARCHAR);
 INSERT INTO GOV.ONTOLOGY_TERM SELECT * FROM VALUES
@@ -254,7 +253,9 @@ SELECT column1, column2, column3, PARSE_JSON(column4)::OBJECT, column5::DATE, co
  ('VQ-18','Trace the MM-440 sales order lines, promise dates, shipments and lots for the Northeast in May 2026',NULL,'{"item_id":"MM-440","geography_id":"GEO-NORTHEAST"}','2026-05-01','2026-05-31',NULL,NULL,'order_genealogy'),
  ('VQ-19','Show the MM-440 purchase order lines, receipts and lots at Dayton in May 2026',NULL,'{"item_id":"MM-440","facility_id":"FAC-DAYTON"}','2026-05-01','2026-05-31',NULL,NULL,'order_genealogy'),
  ('VQ-20','Which cost documents make up landed cost for MM-440 receipts at Dayton in May 2026?',NULL,'{"item_id":"MM-440","facility_id":"FAC-DAYTON"}','2026-05-01','2026-05-31',NULL,NULL,'cost_lines'),
- ('VQ-21','Customer on-time delivery by site for May 2026','OUTBOUND_CUSTOMER_OTD','{}','2026-05-01','2026-05-31','final',NULL,'breakdown');
+ ('VQ-21','Customer on-time delivery by site for May 2026','OUTBOUND_CUSTOMER_OTD','{}','2026-05-01','2026-05-31','final',NULL,'breakdown'),
+ ('VQ-22','Show MM-440 customer order ship-to locations, returns, ratings and complaints for May 2026',NULL,'{"item_id":"MM-440"}','2026-05-01','2026-05-31',NULL,NULL,'customer_feedback'),
+ ('VQ-23','Show the source-system item codes mapped to MM-440',NULL,'{"item_id":"MM-440"}',NULL,NULL,NULL,NULL,'identity_resolution');
 UPDATE GOV.VERIFIED_QUESTION SET FOLLOW_UP_ID = 'VQ-17' WHERE QUESTION_ID = 'VQ-01';
 
 -- ---------------------------------------------------------------- evidence and audit (append-only)

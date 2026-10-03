@@ -72,8 +72,11 @@ the selected persona for the conditional cost masking policy.
   (`CONCORDIA_LOGISTICS` → `LOGISTICS`); the app owner is matched through the
   persona recorded for its session in `GOV.APP_PERSONA_CONTEXT`.
 - Rows with no site (network, part, region, supplier and customer answers) stay
-  visible to every persona. They are aggregates that include other sites, so the
-  restriction is on site-level answers and site records, not on totals.
+  visible to every persona. They are not filtered by site-detail entitlement and
+  may include contributing sites whose detail the persona cannot inspect. The
+  restriction is on site-level answers and site records, not on totals. The
+  semantic view exposes this boundary as `results.access_note`; the Command
+  center shows the same rule for Logistics whenever no single site is chosen.
 - `APP.RESULTS_FOR`, `BREAKDOWN_FOR`, `CONTRIBUTION_FOR`, `RECEIPTS_FOR` and
   `ASK_METRIC` apply the same rule and return `FORBIDDEN` with
   `SITE_NOT_ENTITLED`.
