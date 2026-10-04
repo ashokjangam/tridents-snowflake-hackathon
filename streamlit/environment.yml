@@ -1,8 +1,6 @@
-name: sf_env
+name: patient_360
 channels:
   - snowflake
 dependencies:
-  - streamlit=1.52.2
-  - plotly
-  - matplotlib
-  - streamlit-option-menu
+  - streamlit
+  - snowflake-snowpark-python

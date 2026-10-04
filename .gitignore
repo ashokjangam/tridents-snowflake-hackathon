@@ -1,35 +1,13 @@
-# Secrets — never commit these
-*.pat
-*.token
-*.p8
-*.pem
-*.key
-.env
-.env.*
-connections.toml
-config.toml
-**/secrets.toml
-.streamlit/secrets.toml
-
-# Snowflake / CoCo local state
-.snowflake/
-.cortex/
-*.log
-
-# Python
 __pycache__/
 *.py[cod]
+.pytest_cache/
+.mypy_cache/
 .venv/
 venv/
-.ipynb_checkpoints/
-
-# OS / editor
-.DS_Store
-Thumbs.db
-.vscode/
-.idea/
-
-# Working notes not intended for publication
-session-transcripts/
-DAY-*-DIARY.md
-SESSION-NOTES.md
+.env
+.env.*
+.streamlit/secrets.toml
+*.log
+output/
+generated/
+data/

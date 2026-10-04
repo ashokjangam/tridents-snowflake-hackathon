@@ -1,6 +1,0 @@
-name: patient_360
-channels:
-  - snowflake
-dependencies:
-  - streamlit
-  - snowflake-snowpark-python

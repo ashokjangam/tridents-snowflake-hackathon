@@ -1,3 +1,0 @@
-plotly
-matplotlib
-streamlit-option-menu
