@@ -75,7 +75,7 @@ try:
     )
     from app.retrieve import retrieval_steps
     from app.rows import normalize_row
-    from app.text_parse import cited_day, synthea_name
+    from app.text_parse import synthea_name
 except ImportError:
     st.error(
         "The app package is not on the path. Stage app/ next to this file, "
@@ -229,34 +229,111 @@ def population(session: object | None) -> list[dict[str, str | None]]:
 
 
 def cohort_audit(risk_rows: list[dict[str, str | None]]) -> None:
-    st.header("Descriptive cohort audit")
+    st.header("Retrospective risk-signal audit")
     st.caption(
-        "Secondary evidence only: a frozen point count, not a validated model, "
-        "probability, or care recommendation."
+        "Secondary evidence only: observed 2023 emergency/inpatient utilization by a frozen "
+        "pre-index point count. This is not a validated classifier, patient probability, "
+        "or care recommendation."
     )
-    if risk_rows:
-        scores: list[str] = []
-        patients: list[int] = []
-        for risk_row in risk_rows:
-            score = risk_row.get("score")
-            count = risk_row.get("patient_count")
-            if score is None or count is None:
-                continue
-            scores.append(score)
-            patients.append(int(float(count)))
-        if scores:
-            try:
-                st.bar_chart({"score": scores, "Patients": patients}, x="score", y="Patients")
-            except Exception:
-                columns = st.columns(len(scores))
-                for column, score, count in zip(columns, scores, patients, strict=True):
-                    column.metric(f"Score {score}", str(count))
-        with st.expander("How the four points are defined"):
-            st.write(POINT_RULES)
-        show_answer(
-            assemble_answer(RISK_QUESTION, risk_rows=risk_rows, warehouse_connected=True),
-            risk_rows,
+    if not risk_rows:
+        return
+    answer = assemble_answer(RISK_QUESTION, risk_rows=risk_rows, warehouse_connected=True)
+    if answer.status is AnswerStatus.REFUSED:
+        show_answer(answer, risk_rows)
+        return
+    _show_risk_metrics(risk_rows[0])
+    scores, patients, event_rates, audit_rows = _risk_chart_series(risk_rows)
+    if scores:
+        _show_risk_charts(scores, patients, event_rates)
+        st.dataframe(audit_rows, use_container_width=True)
+    warnings = _risk_audit_warnings(risk_rows)
+    if warnings:
+        st.warning(" ".join(warnings))
+    with st.expander("How the four points are defined"):
+        st.write(POINT_RULES)
+    show_answer(answer, risk_rows)
+
+
+def _show_risk_metrics(first: dict[str, str | None]) -> None:
+    metrics = st.columns(4)
+    metrics[0].metric("Index", first.get("index_date") or "not returned")
+    metrics[1].metric("Horizon end", first.get("horizon_end") or "not returned")
+    metrics[2].metric(
+        "Cohort / events",
+        f"{_whole(first.get('cohort_n'))} / {_whole(first.get('event_n'))}",
+    )
+    base_rate = first.get("base_rate")
+    metrics[3].metric(
+        "Observed base rate",
+        f"{float(base_rate) * 100:.2f}%" if base_rate is not None else "not returned",
+    )
+
+
+def _risk_chart_series(
+    risk_rows: list[dict[str, str | None]],
+) -> tuple[list[str], list[int], list[float | None], list[dict[str, object]]]:
+    scores: list[str] = []
+    patients: list[int] = []
+    event_rates: list[float | None] = []
+    audit_rows: list[dict[str, object]] = []
+    for risk_row in risk_rows:
+        score = risk_row.get("score")
+        count = risk_row.get("patient_count")
+        if score is None or count is None:
+            continue
+        member_count = int(float(count))
+        rate = risk_row.get("event_rate")
+        rate_pct = float(rate) * 100 if rate is not None else None
+        scores.append(score)
+        patients.append(member_count)
+        event_rates.append(rate_pct)
+        audit_rows.append(
+            {
+                "Score": score,
+                "Members": member_count,
+                "Events": int(float(risk_row.get("bucket_event_count") or 0)),
+                "Observed event rate": f"{rate_pct:.2f}%" if rate_pct is not None else "No members",
+            }
         )
+    return scores, patients, event_rates, audit_rows
+
+
+def _show_risk_charts(
+    scores: list[str], patients: list[int], event_rates: list[float | None]
+) -> None:
+    try:
+        charts = st.columns(2)
+        with charts[0]:
+            st.caption("Members in each score bucket")
+            st.bar_chart({"score": scores, "Members": patients}, x="score", y="Members")
+        with charts[1]:
+            st.caption("Observed emergency/inpatient event rate (%)")
+            st.bar_chart(
+                {"score": scores, "Observed rate (%)": event_rates},
+                x="score",
+                y="Observed rate (%)",
+            )
+    except Exception:
+        columns = st.columns(len(scores))
+        for column, score, count, rate in zip(columns, scores, patients, event_rates, strict=True):
+            delta = f"{rate:.2f}% observed" if rate is not None else "no observed rate"
+            column.metric(f"Score {score}", str(count), delta)
+
+
+def _risk_audit_warnings(risk_rows: list[dict[str, str | None]]) -> list[str]:
+    by_score = {row.get("score"): row for row in risk_rows}
+    warnings: list[str] = []
+    rate_1 = by_score.get("1", {}).get("event_rate")
+    rate_2 = by_score.get("2", {}).get("event_rate")
+    if rate_1 is not None and rate_2 is not None and float(rate_2) < float(rate_1):
+        warnings.append("Score 2 is below score 1, so the buckets are not monotonic.")
+    score_3_count = by_score.get("3", {}).get("patient_count")
+    if score_3_count is not None and 0 < int(float(score_3_count)) < 10:
+        warnings.append(f"Score 3 contains only {_whole(score_3_count)} members.")
+    score_4_count = by_score.get("4", {}).get("patient_count")
+    if score_4_count is not None and int(float(score_4_count)) == 0:
+        warnings.append("Score 4 is empty.")
+    return warnings
 
 
 def profile(patient: dict[str, str | None]) -> None:
@@ -456,11 +533,9 @@ def run_question(
             if code and description:
                 section_rows = fetch(session, medication_section_query(patient_id, code, description))
         if "allergy" in steps and patient_id:
-            allergy_rows = fetch(session, allergy_query(patient_id, cited_day(question)))
-        if "allergy_section" in steps and patient_id and len(allergy_rows) == 1:
-            code = allergy_rows[0].get("code")
-            if code:
-                section_rows = fetch(session, allergy_section_query(patient_id))
+            allergy_rows = fetch(session, allergy_query(patient_id))
+        if "allergy_section" in steps and patient_id and allergy_rows:
+            section_rows = fetch(session, allergy_section_query(patient_id))
         if "risk" in steps:
             risk_rows = fetch(session, risk_query())
         if patient_id:

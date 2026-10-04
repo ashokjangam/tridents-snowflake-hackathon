@@ -10,6 +10,7 @@ from app.guardrails import has_banned_clinical_claim
 from app.models import Answer, AnswerStatus
 
 DEFAULT_AI_COMPLETE_MODEL = "llama3.1-70b"
+_EMPTY_ALLERGY_SCOPE = "No allergy rows are recorded in this dataset"
 
 NARRATION_SQL = """
 SELECT AI_COMPLETE(?, ?, OBJECT_CONSTRUCT('temperature', 0)) AS NARRATION
@@ -33,6 +34,8 @@ def build_narration_prompt(question: str, answer: Answer, rows: list[dict[str, o
         "Do not call a point count a probability or a validated model. "
         "If quoted_codes is present, those are the only codes you may quote as the finding. "
         "If you mention a rejected code, the word not must appear immediately before it. "
+        "If the deterministic answer says no allergy rows are recorded in this dataset, "
+        "preserve that exact dataset scope and do not say the member has no allergies. "
         "End with the citation tuples exactly as given.\n\n"
         f"Question: {question}\n"
         f"quoted_codes: {quoted}\n"
@@ -50,6 +53,8 @@ def accept_narration(narration: str, answer: Answer) -> bool:
         if format_citation(citation) not in narration:
             return False
     if has_banned_clinical_claim(narration):
+        return False
+    if _EMPTY_ALLERGY_SCOPE in answer.text and _EMPTY_ALLERGY_SCOPE not in narration:
         return False
     for code in answer.quoted_codes:
         if code not in narration:

@@ -270,26 +270,8 @@ ORDER BY START_TS
     )
 
 
-def allergy_query(patient_id: str, day: str | None) -> QuerySpec:
+def allergy_query(patient_id: str) -> QuerySpec:
     table = _qualified("ALLERGY")
-    if day is None:
-        return QuerySpec(
-            name="allergy",
-            sql=f"""
-SELECT
-    PATIENT_ID,
-    ENCOUNTER_ID,
-    START_DATE AS "START",
-    CODE,
-    DESCRIPTION,
-    REACTION_1_CODE AS REACTION1,
-    REACTION_1_DESCRIPTION AS DESCRIPTION1,
-    REACTION_1_SEVERITY AS SEVERITY1
-FROM {table}
-WHERE PATIENT_ID = ?
-""".strip(),
-            params=(patient_id,),
-        )
     return QuerySpec(
         name="allergy",
         sql=f"""
@@ -304,9 +286,9 @@ SELECT
     REACTION_1_SEVERITY AS SEVERITY1
 FROM {table}
 WHERE PATIENT_ID = ?
-  AND TO_VARCHAR(START_DATE, 'YYYY-MM-DD') LIKE ? || '%' ESCAPE '\\\\'
+ORDER BY START_DATE, CODE, ENCOUNTER_ID
 """.strip(),
-        params=(patient_id, _like_literal(day)),
+        params=(patient_id,),
     )
 
 
@@ -323,7 +305,8 @@ SELECT
     SECTION_TITLE,
     ELEMENT_ID,
     TEXT,
-    CODE
+    CODE,
+    REJECTED_CODES
 FROM {table}
 WHERE PATIENT_ID = ?
   AND SECTION_LOINC = '48765-2'
@@ -525,6 +508,7 @@ window_dates AS (
 SELECT
     TO_NUMBER(s.SCORE_BUCKET) AS SCORE,
     s.PATIENT_COUNT,
+    s.EVENT_COUNT AS BUCKET_EVENT_COUNT,
     s.EVENT_RATE_PCT / 100 AS EVENT_RATE,
     s.COHORT_PATIENT_COUNT AS COHORT_N,
     s.COHORT_EVENT_COUNT AS EVENT_N,
@@ -598,8 +582,7 @@ def all_statement_sql() -> tuple[str, ...]:
         *chart_queries(sample),
         antihistamine_query(sample),
         medication_section_query(sample, "1", "desc"),
-        allergy_query(sample, None),
-        allergy_query(sample, "2005-06-18"),
+        allergy_query(sample),
         allergy_section_query(sample),
         member_summary_query(sample),
         recent_encounter_query(sample),

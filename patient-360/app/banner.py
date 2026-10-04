@@ -38,8 +38,9 @@ BANNER = (
 
 TRACK_NOTE = (
     "Problem 04 allows clinical or regulatory documents; this implementation uses clinical "
-    "C-CDA documents. The descriptive cohort audit is secondary. "
-    "The point count is not a validated stratifier, not a probability of deterioration, "
+    "C-CDA documents. The retrospective risk-signal audit is secondary. "
+    "It reports observed emergency/inpatient utilization by a frozen point count; "
+    "it is not a validated stratifier or classifier, not a patient probability, "
     "and not a care recommendation. Queried figures on this page are the figures to rehearse. "
     "A written expected count that disagrees with the query means the load is wrong."
 )

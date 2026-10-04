@@ -25,7 +25,7 @@ from app.guardrails import (
 from app.intents import classify_intent, refusal_intents
 from app.models import Answer, Intent
 from app.rows import normalize_row
-from app.text_parse import cited_day, synthea_name
+from app.text_parse import synthea_name
 
 
 def resolve_patient_id(
@@ -85,16 +85,10 @@ def assemble_answer(
         patients = name_rows if synthea_name(question) is not None else ()
         return answer_medication(medications, sections, patients)
     if intent is Intent.ALLERGY_CITATION:
-        day = cited_day(question)
         allergies = _for_patient(allergy_rows, patient_id)
-        if day is not None:
-            allergies = tuple(
-                row
-                for row in allergies
-                if (normalize_row(row).get("start") or "").startswith(day)
-            )
         sections = _for_patient(section_rows, patient_id)
-        return answer_allergy(allergies, sections)
+        patients = _for_patient(evidence_rows, patient_id)
+        return answer_allergy(allergies, sections, patients)
     evidence = _for_patient(evidence_rows, patient_id)
     sections = _for_patient(section_rows, patient_id)
     if intent is Intent.MEMBER_SUMMARY:

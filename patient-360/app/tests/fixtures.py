@@ -67,6 +67,7 @@ WORKED_ALLERGY_SECTIONS = (
         "ELEMENT_ID": "allergies-desc-1",
         "TEXT": "Allergic disposition (finding)",
         "CODE": "609328004",
+        "REJECTED_CODES": "419199007",
     },
     {
         "DOCUMENT_ID": WORKED_PATIENT_ID,
@@ -104,6 +105,7 @@ def risk_bucket(
     row: dict[str, object] = {
         "SCORE": score,
         "PATIENT_COUNT": patients,
+        "BUCKET_EVENT_COUNT": 0 if rate is None else round(patients * float(rate)),
         "EVENT_RATE": rate,
         "COHORT_N": cohort,
         "EVENT_N": events,

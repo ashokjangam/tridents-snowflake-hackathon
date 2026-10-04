@@ -89,74 +89,132 @@ def answer_medication(
 def answer_allergy(
     allergy_rows: Sequence[Mapping[str, object]],
     section_rows: Sequence[Mapping[str, object]],
+    patient_rows: Sequence[Mapping[str, object]] = (),
 ) -> Answer:
-    """Quote the allergies.csv code. A different code in the same entry stays unquoted."""
+    """List selected-member allergy rows while guarding every quoted CSV code."""
     allergies = [normalize_row(row) for row in allergy_rows]
-    if len(allergies) == 0:
-        return refuse(
-            Intent.ALLERGY_CITATION,
-            "Refused. No allergy row matched this question, so there is no citation tuple.",
-        )
-    if len(allergies) != 1:
-        return refuse(
-            Intent.ALLERGY_CITATION,
-            "Refused. Retrieval returned "
-            f"{len(allergies)} allergy rows. This demo cites one row and does not choose among them.",
-        )
-    allergy = allergies[0]
-    table_citation = _table_citation(_ALLERGY_TABLE, allergy)
-    if table_citation is None or not allergy.get("code"):
-        return refuse(
-            Intent.ALLERGY_CITATION,
-            "Refused. The allergy row is missing patient, encounter, code, or start.",
-        )
-    csv_code = allergy["code"] or ""
-    documents = _matching_documents(section_rows, csv_code, allergy["patient_id"])
-    rejected = conflicting_codes(
-        csv_code,
-        tuple(
-            value
-            for row in section_rows
-            for value in (
-                normalize_row(row).get("code"),
-                normalize_row(row).get("text"),
-            )
-        ),
-    )
-    citations: list[Citation] = [table_citation, *[document for _, document in documents]]
-    lines = [
-        f"Quoted allergy code {csv_code}, {allergy.get('description') or 'description not on the row'}.",
-        f"Start {allergy['start']}. Encounter {allergy['encounter_id']}.",
-        "The quoted code is the allergies.csv code on the retrieved row.",
-        format_citation(table_citation) + ".",
-    ]
-    for section, document in documents:
-        lines.append(format_citation(document) + ".")
-        if section.get("text"):
-            lines.append(f"Section text: {section['text']}.")
-    for code in rejected:
-        lines.append(
-            f"Not the quoted allergy: retrieved code {code} differs from allergies.csv code {csv_code}."
-        )
-    if not documents:
-        lines.append(
-            "No document-section row matched the allergies.csv code, so this answer does not claim a C-CDA cell."
-        )
-    lines.append("Synthetic Synthea record. Not for care.")
-    text = " ".join(lines)
-    for code in rejected:
-        if not rejected_code_is_guarded(text, csv_code, code):
+    if not allergies:
+        return _cited_empty_allergies(patient_rows)
+
+    candidates = _allergy_section_candidates(section_rows)
+    valid_codes = {code for code in (row.get("code") for row in allergies) if code}
+    citations: list[Citation] = []
+    lines = [f"Retrieved {len(allergies)} allergy row(s) for the selected member."]
+    quoted_codes: list[str] = []
+    rejected_codes: list[str] = []
+    for allergy in allergies:
+        table_citation = _table_citation(_ALLERGY_TABLE, allergy)
+        csv_code = allergy.get("code") or ""
+        if table_citation is None or not csv_code:
             return refuse(
                 Intent.ALLERGY_CITATION,
-                "Refused. The allergy guard stopped an answer that would quote a code other than allergies.csv.",
+                "Refused. An allergy row is missing patient, encounter, code, or start.",
             )
+        documents = _matching_documents(section_rows, csv_code, allergy.get("patient_id"))
+        rejected = _rejected_allergy_codes(csv_code, candidates, valid_codes)
+        citations.append(table_citation)
+        citations.extend(document for _, document in documents)
+        if csv_code not in quoted_codes:
+            quoted_codes.append(csv_code)
+        lines.extend(
+            (
+                f"Quoted allergy code {csv_code}, "
+                f"{allergy.get('description') or 'description not on the row'}.",
+                f"Start {allergy['start']}. Encounter {allergy['encounter_id']}.",
+                format_citation(table_citation) + ".",
+            )
+        )
+        for section, document in documents:
+            lines.append(format_citation(document) + ".")
+            if section.get("text"):
+                lines.append(f"Section text: {section['text']}.")
+        if not documents:
+            lines.append(
+                "No document-section row matched this allergies.csv code, "
+                "so this row does not claim a C-CDA cell."
+            )
+        for code in rejected:
+            if code not in rejected_codes:
+                rejected_codes.append(code)
+            lines.append(
+                f"Not the quoted allergy: retrieved code {code} "
+                f"differs from allergies.csv code {csv_code}."
+            )
+    lines.append("The quoted codes are from the retrieved allergies.csv rows.")
+    lines.append("Synthetic Synthea record. Not for care.")
+    text = " ".join(lines)
+    if not _allergy_codes_are_guarded(text, quoted_codes, rejected_codes):
+        return refuse(
+            Intent.ALLERGY_CITATION,
+            "Refused. The allergy guard stopped an answer that would quote a code "
+            "other than allergies.csv.",
+        )
     return _cited(
         Intent.ALLERGY_CITATION,
         text,
         tuple(citations),
-        quoted_codes=(csv_code,),
-        rejected_codes=rejected,
+        quoted_codes=tuple(quoted_codes),
+        rejected_codes=tuple(rejected_codes),
     )
+
+
+def _cited_empty_allergies(patient_rows: Sequence[Mapping[str, object]]) -> Answer:
+    """Cite the selected member when that member has no allergy rows."""
+    patients = [normalize_row(row) for row in patient_rows]
+    patient_id = patients[0].get("patient_id") if len(patients) == 1 else None
+    if not patient_id:
+        return refuse(
+            Intent.ALLERGY_CITATION,
+            "Refused. The selected member row is unavailable, so an empty allergy result cannot be scoped.",
+        )
+    patient_citation = PatientCitation(table="PATIENT", patient_id=patient_id)
+    return _cited(
+        Intent.ALLERGY_CITATION,
+        "No allergy rows are recorded in this dataset for the selected member. "
+        "This is a dataset result, not a claim that the member has no known allergies. "
+        + format_citation(patient_citation)
+        + ". Synthetic Synthea record. Not for care.",
+        (patient_citation,),
+    )
+
+
+def _allergy_section_candidates(
+    section_rows: Sequence[Mapping[str, object]],
+) -> tuple[str | None, ...]:
+    """Code, prose, and rejected-code cells the allergy guard is allowed to see."""
+    return tuple(
+        value
+        for section in (normalize_row(row) for row in section_rows)
+        for value in (
+            section.get("code"),
+            section.get("text"),
+            section.get("rejected_codes"),
+        )
+    )
+
+
+def _rejected_allergy_codes(
+    csv_code: str,
+    candidates: tuple[str | None, ...],
+    valid_codes: set[str],
+) -> tuple[str, ...]:
+    """Section codes that are neither this row nor another selected-member allergy."""
+    return tuple(
+        code for code in conflicting_codes(csv_code, candidates) if code not in valid_codes
+    )
+
+
+def _allergy_codes_are_guarded(
+    text: str,
+    quoted_codes: Sequence[str],
+    rejected_codes: Sequence[str],
+) -> bool:
+    """Every rejected code must stay guarded beside every quoted allergies.csv code."""
+    for quoted_code in quoted_codes:
+        for rejected_code in rejected_codes:
+            if not rejected_code_is_guarded(text, quoted_code, rejected_code):
+                return False
+    return True
 
 
 def answer_member_summary(
@@ -356,9 +414,11 @@ def answer_risk(risk_rows: Sequence[Mapping[str, object]]) -> Answer:
         )
     first = scores[0]
     lines = [
-        f"CORE.RISK_SCORE returned a point count for index {first.index_date} through {first.horizon_end}.",
+        "CORE.RISK_SCORE returned a retrospective risk-signal audit for "
+        f"index {first.index_date} through {first.horizon_end}.",
         f"Cohort size {first.cohort_n}. Events {first.event_n}. Base rate {first.base_rate_text}.",
-        "This is a point count, not a validated stratifier, not a probability of deterioration, "
+        "The frozen point count reports observed emergency/inpatient utilization; "
+        "it is not a validated stratifier or classifier, not a patient probability, "
         "and not a care recommendation.",
     ]
     citations: list[Citation] = []
@@ -368,12 +428,12 @@ def answer_risk(risk_rows: Sequence[Mapping[str, object]]) -> Answer:
         if bucket.event_rate_text is None:
             lines.append(
                 f"Score {bucket.score}: {bucket.patient_count} patients. "
-                "The retrieved row has no event rate."
+                f"Events {bucket.bucket_event_count}. The retrieved row has no event rate."
             )
         else:
             lines.append(
                 f"Score {bucket.score}: {bucket.patient_count} patients, "
-                f"event rate {bucket.event_rate_text}."
+                f"events {bucket.bucket_event_count}, observed event rate {bucket.event_rate_text}."
             )
         citations.append(
             CohortCitation(
@@ -387,7 +447,10 @@ def answer_risk(risk_rows: Sequence[Mapping[str, object]]) -> Answer:
         rate_1 = by_score[1].event_rate
         rate_2 = by_score[2].event_rate
         if rate_1 is not None and rate_2 is not None and rate_2 < rate_1:
-            lines.append("Score 2 sits below score 1 on the retrieved rates.")
+            lines.append(
+                "Score 2 sits below score 1 on the retrieved rates, so these buckets "
+                "do not establish monotonic risk stratification."
+            )
     try:
         ge2_count = _optional_agreement(rows, "ge2_patient_count")
         ge2_rate = _optional_agreement(rows, "ge2_event_rate")
@@ -447,6 +510,7 @@ class _RiskBucket:
         self,
         score: int,
         patient_count: str,
+        bucket_event_count: str,
         event_rate: float | None,
         event_rate_text: str | None,
         cohort_n: str,
@@ -457,6 +521,7 @@ class _RiskBucket:
     ) -> None:
         self.score = score
         self.patient_count = patient_count
+        self.bucket_event_count = bucket_event_count
         self.event_rate = event_rate
         self.event_rate_text = event_rate_text
         self.cohort_n = cohort_n
@@ -470,6 +535,7 @@ class _RiskBucket:
         required = (
             "score",
             "patient_count",
+            "bucket_event_count",
             "cohort_n",
             "event_n",
             "base_rate",
@@ -492,6 +558,7 @@ class _RiskBucket:
         return cls(
             score=int(format_count(row["score"] or "")),
             patient_count=patient_count,
+            bucket_event_count=format_count(row["bucket_event_count"] or ""),
             event_rate=event_rate,
             event_rate_text=event_rate_text,
             cohort_n=format_count(row["cohort_n"] or ""),

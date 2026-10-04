@@ -54,7 +54,7 @@ svg{background:var(--panel);border:1px solid var(--line);border-radius:12px;marg
 <a href="#arch">5 · Snowflake architecture</a>
 <a href="#cite">6 · The citation contract</a>
 <a href="#answers">7 · Six questions, six outcomes</a>
-<a href="#risk">8 · The honest point count</a>
+<a href="#risk">8 · Retrospective risk-signal audit</a>
 <a href="#guard">9 · Guardrails and governance</a>
 <a href="#app">10 · The judge-facing app</a>
 <a href="#checks">11 · Every check we run</a>
@@ -131,11 +131,11 @@ It joins 108 simulated Synthea patients across their encounters, claims and thei
 
 <section id="problem">
 <h2>2 · The problem we answer</h2>
-<p>Problem 04, Patient / Member 360 and Clinical or Regulatory Document Copilot, asks for a unified member view across structured records and documents with cited evidence. The statement permits clinical <b>or</b> regulatory documents; this implementation deliberately chooses the clinical C-CDA path. The primary outcome is broad cited evidence retrieval. The point count is a secondary descriptive audit:</p>
+<p>Problem 04, Patient / Member 360 and Clinical or Regulatory Document Copilot, asks for a unified member view across structured records and documents with cited evidence. The statement permits clinical <b>or</b> regulatory documents; this implementation deliberately chooses the clinical C-CDA path. The primary outcome is broad cited evidence retrieval. The point count is a secondary retrospective audit:</p>
 <div class="grid g3">
 <div class="card"><h3>Cited answer</h3><p>Natural-language questions answered only from rows the SQL step returned, with the citation tuple on screen.</p><span class="badge b-obs">BUILT</span></div>
 <div class="card"><h3>Evidence retrieval</h3><p>The rows behind each answer are one click away: the C-CDA cell, the CSV row and the claim on the same encounter.</p><span class="badge b-obs">BUILT</span></div>
-<div class="card"><h3>Risk stratification</h3><p>A frozen, pre-specified four-point count with its measured bucket table. Not a validated model, and labelled that way.</p><span class="badge b-cho">HONEST LIMIT</span></div>
+<div class="card"><h3>Risk-signal audit</h3><p>A frozen, pre-specified four-point count with member counts, events and observed rates. It is not a validated classifier or patient probability.</p><span class="badge b-cho">HONEST LIMIT</span></div>
 </div>
 </section>
 
@@ -212,10 +212,10 @@ It joins 108 simulated Synthea patients across their encounters, claims and thei
 <div class="qa"><div class="q"><span class="badge b-obs">ANSWERED</span> 1 · Which antihistamine is on her medication list, and where is it written?</div>
 <div class="a">Fexofenadine hydrochloride 60 MG Oral Tablet, RxNorm <code>997501</code>, started 2005-06-18.<br>
 <span class="chip">document 37549f60-…-5a71c4bc23cf</span><span class="chip">LOINC 10160-0</span><span class="chip">medications-desc-2</span><span class="chip">medications-code-2</span><span class="chip">MEDICATION row · encounter 37549f60-…-c7a0b0133ccf</span></div></div>
-<div class="qa"><div class="q"><span class="badge b-obs">ANSWERED</span> 2 · What allergy is recorded on 18 June 2005?</div>
+<div class="qa"><div class="q"><span class="badge b-obs">ANSWERED</span> 2 · Which allergies are recorded for the selected member?</div>
 <div class="a">Allergic disposition, SNOMED <code>609328004</code>, same encounter. The guard notes that the C-CDA entry also carries <code>419199007</code> and never substitutes it for the CSV match.</div></div>
 <div class="qa"><div class="q"><span class="badge b-obs">ANSWERED</span> 3 · How did the frozen 2023 point count sort the cohort?</div>
-<div class="a">97 patients, 14 events, base rate 14.43%; buckets 0/1/2/3/4 = 19/37/35/6/0. Shown as a point count, not a validated stratifier (section 8).</div></div>
+<div class="a">97 patients, 14 events, base rate 14.43%; bucket populations 0/1/2/3/4 = 19/37/35/6/0 and events = 1/6/5/2/0. Score 2 sits below score 1, score 3 is sparse and score 4 is empty, so this is an observed-rate audit rather than a validated classifier (section 8).</div></div>
 <div class="qa"><div class="q"><span class="badge b-ref">REFUSED</span> 4 · Change the fexofenadine dose.</div>
 <div class="a">Refused. No row is an order, and the app does not write back or recommend treatment.</div></div>
 <div class="qa"><div class="q"><span class="badge b-ref">REFUSED</span> 5 · Quote the 2019 discharge summary.</div>
@@ -225,7 +225,7 @@ It joins 108 simulated Synthea patients across their encounters, claims and thei
 </section>
 
 <section id="risk">
-<h2>8 · The honest point count</h2>
+<h2>8 · Retrospective risk-signal audit</h2>
 <p>Four points, fixed before the rates were read: age at index ≥ 65; a prior emergency or inpatient encounter; at least 8 conditions active at the index; last prior HbA1c (<code>4548-4</code>) ≥ 6.5. Index 2023-01-01, horizon to 2024-01-01. Outcome: any emergency or inpatient encounter in the horizon.</p>
 <svg viewBox="0 0 1100 300" width="100%" role="img" aria-label="Event rate by point-count bucket">
 <g stroke="#1a2433"><line x1="80" x2="1070" y1="250" y2="250"/><line x1="80" x2="1070" y1="195" y2="195"/><line x1="80" x2="1070" y1="140" y2="140"/><line x1="80" x2="1070" y1="85" y2="85"/><line x1="80" x2="1070" y1="30" y2="30"/></g>
@@ -266,7 +266,7 @@ It joins 108 simulated Synthea patients across their encounters, claims and thei
 <li>Prefilled cited answers for member/encounters, conditions, care plans, labs, claims, medication and allergy evidence.</li>
 <li>Each answer shows citation chips and a "Rows behind this answer" expander.</li>
 <li>Example prompts also cover medication lists, procedures, immunizations and coverage spans.</li>
-<li>The non-monotonic point count is below the clinical workflow as a secondary descriptive cohort audit.</li>
+<li>The non-monotonic point count is below the clinical workflow as a secondary retrospective audit, with counts, events and observed rates shown together.</li>
 </ul></div>
 </div>
 <div class="plain"><b class="t">Design rule.</b> A judge who never opens an expander still sees the outcome, the evidence chips and a refusal. Raw tables are there to verify, not to read first.</div>
@@ -284,7 +284,7 @@ It joins 108 simulated Synthea patients across their encounters, claims and thei
 <tr><td>Question 1 tuple</td><td>one medication row + two cells</td><td class="win">pass</td></tr>
 <tr><td>Risk buckets</td><td>19 / 37 / 35 / 6 / 0</td><td class="win">pass</td></tr>
 <tr><td>App queries as analyst role</td><td>18 queries run, correct aliases</td><td class="win">pass</td></tr>
-<tr><td>Python unit tests</td><td>30 app tests + 6 parser tests</td><td class="win">pass</td></tr>
+<tr><td>Python unit tests</td><td>40 app tests + 6 parser tests</td><td class="win">pass</td></tr>
 </tbody></table>
 <p>Live gate summary from <code>tests/expected_checks.sql</code>: <code>FAILED_GATE_COUNT = 0</code>.</p>
 </section>
@@ -306,8 +306,8 @@ It joins 108 simulated Synthea patients across their encounters, claims and thei
 <tr><td>0:00</td><td>Lead line and banner</td><td>Synthea, MITRE, 108 simulated patients, not for care. Every answer cites a row or refuses.</td></tr>
 <tr><td>0:30</td><td>Population metrics and join line</td><td>One key crosses chart, claim and document: 108 of 108, zero orphans.</td></tr>
 <tr><td>1:30</td><td>Medication answer</td><td>Fexofenadine, RxNorm 997501, cell <code>medications-desc-2</code> under LOINC 10160-0, one CSV row.</td></tr>
-<tr><td>3:00</td><td>Allergy answer</td><td>The CSV match is 609328004; the other code in the entry is 419199007; we quote the match.</td></tr>
-<tr><td>4:00</td><td>Risk chart</td><td>97 patients, 14 events. Score 2 sits below score 1. This is a point count, not a model.</td></tr>
+<tr><td>3:00</td><td>Allergy answer</td><td>The selected-member list handles zero, one or many rows. For Mosciski the CSV match is 609328004; 419199007 remains explicitly unquoted.</td></tr>
+<tr><td>4:00</td><td>Risk chart</td><td>97 patients, 14 events. Counts and observed rates are both shown; score 2 sits below score 1, so this is not a classifier.</td></tr>
 <tr><td>5:15</td><td>Refusals</td><td>Change the dose; quote a 2019 discharge summary. Both refused.</td></tr>
 <tr><td>5:45</td><td>Close</td><td>Why not Problem 3: an AML answer has no source passage to cite. Ours always does.</td></tr>
 </tbody></table>
@@ -343,7 +343,7 @@ python scripts/bootstrap_synthea.py                  # pinned archives + C-CDA p
 powershell -File scripts/Invoke-Patient360Load.ps1 -Load # full load + checks
 snow streamlit deploy --replace -c patient360       # PATIENT_360_APP
 snow sql -c patient360 -f sql/95_app_grants.sql     # app usage for analyst
-python -m unittest discover -s app/tests -t . -v    # 35 tests
+python -m unittest discover -s app/tests -t . -v    # 40 tests
 python -m unittest scripts.test_parse_ccda -v       # 6 parser tests
 snow sql -c patient360 -f tests/expanded_questions.sql # analyst smoke checks</pre>
 <table><thead><tr><th>Path</th><th>What it is</th></tr></thead><tbody>

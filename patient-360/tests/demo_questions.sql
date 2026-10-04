@@ -43,10 +43,9 @@ WHERE d.DOCUMENT_ID = '37549f60-b5a3-69cd-dea6-5a71c4bc23cf'
     AND d.ELEMENT_ID IN ('medications-desc-2', 'medications-code-2')
 ORDER BY d.ELEMENT_ID;
 
--- Question 2. What allergy is recorded for that patient on 18 June 2005?
--- Expected quote: SNOMED 609328004, Allergic disposition (finding), start 2005-06-18,
--- encounter 37549f60-b5a3-69cd-bd30-c7a0b0133ccf.
--- The same C-CDA entry also carries assertion code 419199007. Do not substitute it.
+-- Question 2. Show all recorded allergies for the selected member with source evidence.
+-- Every displayed ALLERGY row is quoted and cited. For the worked patient this includes
+-- SNOMED 609328004; rejected C-CDA assertion code 419199007 is never substituted.
 
 SELECT
     a.PATIENT_ID,
@@ -58,19 +57,18 @@ SELECT
     'Quote CSV_MATCH_CODE. Do not substitute the assertion code.' AS ANSWER_RULE
 FROM PATIENT_360.CORE.ALLERGY AS a
 WHERE a.PATIENT_ID = '37549f60-b5a3-69cd-dea6-5a71c4bc23cf'
-    AND a.CODE = '609328004'
-    AND a.START_DATE = DATE '2005-06-18';
+ORDER BY a.START_DATE, a.CODE, a.ENCOUNTER_ID;
 
 SELECT
     d.DOCUMENT_ID,
     d.SECTION_LOINC,
     d.ELEMENT_ID,
     d.CODE,
-    d.TEXT
+    d.TEXT,
+    d.REJECTED_CODES
 FROM PATIENT_360.CORE.DOCUMENT_SECTION AS d
 WHERE d.DOCUMENT_ID = '37549f60-b5a3-69cd-dea6-5a71c4bc23cf'
     AND d.SECTION_LOINC = '48765-2'
-    AND d.ELEMENT_ID IN ('allergies-desc-1', 'allergies-code-1')
 ORDER BY d.ELEMENT_ID;
 
 -- Question 3. How many patients in the frozen 2023 cohort had an emergency or inpatient

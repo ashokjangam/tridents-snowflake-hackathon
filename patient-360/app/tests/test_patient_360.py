@@ -30,6 +30,7 @@ from app.narrate import (
 )
 from app.queries import (
     all_statement_sql,
+    allergy_query,
     allergy_section_query,
     antihistamine_query,
     medication_section_query,
@@ -122,7 +123,7 @@ class IntentTests(unittest.TestCase):
     def test_name_and_day_parsers(self) -> None:
         self.assertEqual(synthea_name(MEDICATION_QUESTION), ("Alexandra16", "Mosciski958"))
         self.assertIsNone(synthea_name(ALLERGY_QUESTION))
-        self.assertEqual(cited_day(ALLERGY_QUESTION), "2005-06-18")
+        self.assertIsNone(cited_day(ALLERGY_QUESTION))
         self.assertEqual(cited_day("allergy on 2005-06-18"), "2005-06-18")
 
 
@@ -134,7 +135,7 @@ class RetrievalPlanTests(unittest.TestCase):
         )
         self.assertEqual(
             retrieval_steps(ALLERGY_QUESTION, WORKED_PATIENT_ID),
-            ("allergy", "allergy_section"),
+            ("member_summary", "allergy", "allergy_section"),
         )
         self.assertEqual(retrieval_steps(ALLERGY_QUESTION, None), ())
         self.assertEqual(retrieval_steps(RISK_QUESTION, None), ("risk",))
@@ -288,6 +289,7 @@ class AnswerTests(unittest.TestCase):
             selected_patient_id=WORKED_PATIENT_ID,
             allergy_rows=[WORKED_ALLERGY],
             section_rows=list(WORKED_ALLERGY_SECTIONS),
+            evidence_rows=[WORKED_PATIENT],
         )
         self.assertIs(answer.status, AnswerStatus.CITED)
         self.assertIn("609328004", answer.text)
@@ -307,6 +309,40 @@ class AnswerTests(unittest.TestCase):
         self.assertNotIn("reaction", answer.text.lower())
         self.assertFalse(has_banned_clinical_claim(answer.text))
 
+    def test_allergy_zero_rows_is_scoped_to_the_selected_member(self) -> None:
+        answer = assemble_answer(
+            ALLERGY_QUESTION,
+            selected_patient_id=WORKED_PATIENT_ID,
+            allergy_rows=[],
+            evidence_rows=[WORKED_PATIENT],
+        )
+        self.assertIs(answer.status, AnswerStatus.CITED)
+        self.assertIn("No allergy rows are recorded in this dataset", answer.text)
+        self.assertIn("not a claim", answer.text)
+        self.assertEqual(len(answer.citations), 1)
+        self.assertIn("table=PATIENT", format_citation(answer.citations[0]))
+
+    def test_allergy_multiple_rows_cites_every_structured_row(self) -> None:
+        second = dict(WORKED_ALLERGY)
+        second["CODE"] = "232347008"
+        second["DESCRIPTION"] = "Dander allergy"
+        second["START"] = "2010-01-01"
+        answer = answer_allergy(
+            [WORKED_ALLERGY, second],
+            list(WORKED_ALLERGY_SECTIONS),
+            [WORKED_PATIENT],
+        )
+        self.assertIs(answer.status, AnswerStatus.CITED)
+        rendered = tuple(format_citation(citation) for citation in answer.citations)
+        self.assertTrue(any("code=609328004" in value for value in rendered))
+        self.assertTrue(any("code=232347008" in value for value in rendered))
+        self.assertEqual(answer.quoted_codes, ("609328004", "232347008"))
+
+    def test_allergy_empty_rows_without_selected_member_evidence_refuses(self) -> None:
+        answer = answer_allergy([], [], [])
+        self.assertIs(answer.status, AnswerStatus.REFUSED)
+        self.assertEqual(answer.citations, ())
+
     def test_quoted_code_is_the_code_on_the_allergy_row(self) -> None:
         swapped = dict(WORKED_ALLERGY)
         swapped["CODE"] = "419199007"
@@ -322,12 +358,13 @@ class AnswerTests(unittest.TestCase):
         self.assertIn("Cohort size 97", answer.text)
         self.assertIn("Events 14", answer.text)
         self.assertIn("14.43%", answer.text)
-        self.assertIn("Score 0: 19 patients, event rate 5.26%", answer.text)
-        self.assertIn("Score 1: 37 patients, event rate 16.22%", answer.text)
-        self.assertIn("Score 2: 35 patients, event rate 14.29%", answer.text)
-        self.assertIn("Score 3: 6 patients, event rate 33.33%", answer.text)
-        self.assertIn("Score 4: 0 patients. The retrieved row has no event rate.", answer.text)
-        self.assertIn("Score 2 sits below score 1 on the retrieved rates.", answer.text)
+        self.assertIn("Score 0: 19 patients, events 1, observed event rate 5.26%", answer.text)
+        self.assertIn("Score 1: 37 patients, events 6, observed event rate 16.22%", answer.text)
+        self.assertIn("Score 2: 35 patients, events 5, observed event rate 14.29%", answer.text)
+        self.assertIn("Score 3: 6 patients, events 2, observed event rate 33.33%", answer.text)
+        self.assertIn("Score 4: 0 patients. Events 0. The retrieved row has no event rate.", answer.text)
+        self.assertIn("Score 2 sits below score 1 on the retrieved rates", answer.text)
+        self.assertIn("do not establish monotonic risk stratification", answer.text)
         self.assertIn("Score 2 or higher: 41 patients, event rate 17.07%", answer.text)
         self.assertIn("dead on or before the index 7", answer.text)
         self.assertIn("born on or after the index 4", answer.text)
@@ -500,6 +537,20 @@ class NarrationTests(unittest.TestCase):
         self.assertFalse(accept_narration(dropped, self.answer))
         self.assertFalse(accept_narration(f"{self.answer.text} See openFDA.", self.answer))
 
+    def test_empty_allergy_narration_preserves_dataset_scope(self) -> None:
+        answer = assemble_answer(
+            ALLERGY_QUESTION,
+            selected_patient_id=WORKED_PATIENT_ID,
+            allergy_rows=[],
+            evidence_rows=[WORKED_PATIENT],
+        )
+        self.assertTrue(accept_narration(answer.text, answer))
+        unsafe = answer.text.replace(
+            "No allergy rows are recorded in this dataset for the selected member.",
+            "The selected member has no allergies.",
+        )
+        self.assertFalse(accept_narration(unsafe, answer))
+
 
 class QueryContractTests(unittest.TestCase):
     def test_statements_omit_identifier_columns_and_bind_patient_values(self) -> None:
@@ -533,8 +584,15 @@ class QueryContractTests(unittest.TestCase):
     def test_allergy_section_keeps_nonmatching_codes_for_the_guard(self) -> None:
         spec = allergy_section_query("patient-1")
         self.assertIn("48765-2", spec.sql)
+        self.assertIn("REJECTED_CODES", spec.sql)
         self.assertEqual(spec.params, ("patient-1",))
         self.assertNotIn("CODE =", spec.sql.upper())
+
+    def test_allergy_query_is_patient_bound_without_a_demo_date(self) -> None:
+        spec = allergy_query("patient-1")
+        self.assertEqual(spec.params, ("patient-1",))
+        self.assertEqual(spec.sql.count("?"), 1)
+        self.assertNotIn("2005-06-18", spec.sql)
 
     def test_like_escape_is_present_for_bound_text(self) -> None:
         spec = medication_section_query("p", "code_1", "100%")

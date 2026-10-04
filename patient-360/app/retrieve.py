@@ -40,7 +40,9 @@ def retrieval_steps(question: str, selected_patient_id: str | None) -> tuple[str
     if intent is Intent.MEDICATION_CITATION:
         return _patient_steps(question, selected_patient_id, "antihistamine", "medication_section")
     if intent is Intent.ALLERGY_CITATION:
-        return _patient_steps(question, selected_patient_id, "allergy", "allergy_section")
+        return _patient_steps(
+            question, selected_patient_id, "member_summary", "allergy", "allergy_section"
+        )
     if intent in {
         Intent.REFUSE_MEDICATION_CHANGE,
         Intent.REFUSE_DISCHARGE,

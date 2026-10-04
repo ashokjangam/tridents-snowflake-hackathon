@@ -6,8 +6,8 @@ regulatory documents; this implementation deliberately uses the clinical path. E
 answer cites warehouse rows or it refuses.
 
 The primary outcome is cited evidence retrieval across chart, document, claim, encounter, and
-coverage records. The frozen point count is a secondary descriptive cohort audit, not a validated
-risk model.
+coverage records. The frozen point count is a secondary retrospective risk-signal audit, not a
+validated classifier or patient-level probability.
 
 ## Supported cited questions
 
@@ -16,7 +16,7 @@ risk model.
 | Member + encounter | `Show this member's chart summary and recent encounters.` |
 | Conditions + C-CDA Problems | `Which conditions are recorded for this member, and where are they written?` |
 | Medication + C-CDA Medications | `Show this member's medication list with source evidence.` |
-| Allergy guard | `What allergy is recorded for that patient on 18 June 2005?` |
+| Allergy guard | `Show all recorded allergies for this selected member with source evidence.` |
 | Care plan + Plan of Care | `Show the care plans for this member with cited evidence.` |
 | Laboratory | `What are this member's latest laboratory results?` |
 | Procedure / immunization | `Which procedures are recorded for this member?` |
@@ -32,8 +32,8 @@ refusals because those sources are not in this clinical-document build.
 - A patient selector and a profile limited to name, gender, birth, death, city, state, and the patient UUID.
 - Encounter class counts, the latest 15 encounters, conditions, medications, a laboratory count plus the latest 25 laboratory rows, claim and claim-line counts, one claim whose appointment id equals an encounter id, and coverage spans.
 - Deterministic answers for the frozen questions, each with a citation tuple.
-- An allergy guard: the quoted code is the `allergies.csv` code on the retrieved row. Another code in the same allergy section may be shown only as not quoted.
-- A point-count panel read from `PATIENT_360.CORE.RISK_SCORE`. Counts and rates on screen are the values the view returned.
+- A selected-member allergy list: every displayed `allergies.csv` row is cited; document codes that differ are explicitly not quoted. An empty result says only that this dataset has no allergy rows for that member.
+- A retrospective risk-signal audit read from `PATIENT_360.CORE.RISK_SCORE`, with population and observed event-rate charts.
 - Hard refusals for a medication change, a discharge summary or progress note, openFDA or external claims, and treatment advice.
 
 Empty member ids, stops, reactions, and encounter ids stay empty. The patient UUID is the member key.
@@ -81,7 +81,7 @@ Citation forms:
 ## Frozen questions
 
 1. Which antihistamine is on Alexandra16 Mosciski958's medication list, and where is it written?
-2. What allergy is recorded for that patient on 18 June 2005?
+2. Show all recorded allergies for this selected member with source evidence.
 3. How many patients in the frozen 2023 cohort had an emergency or inpatient encounter in 2023, and how did the point count sort them?
 4. Change the fexofenadine dose.
 5. Quote the 2019 discharge summary.
@@ -89,7 +89,7 @@ Citation forms:
 
 The page also refuses "What do the external claims show?" and "What should we do about this patient?"
 
-Question 2 uses the selected patient ("that patient") and the day named in the question. Question 1 resolves the Synthea-style name through `CORE.PATIENT` and then keeps a single fexofenadine or antihistamine row. Zero rows or more than one row is a refusal. The worked patient id `37549f60-b5a3-69cd-dea6-5a71c4bc23cf` is only the selector default when the patient query returns it.
+Question 2 uses the selected patient and supports zero, one, or multiple allergy rows. A zero-row result cites the selected `CORE.PATIENT` row and says only that no allergy rows are recorded in this dataset; it never claims the member has no known allergies. Question 1 resolves the Synthea-style name through `CORE.PATIENT` and then keeps a single fexofenadine or antihistamine row. Zero rows or more than one row is a refusal. The worked patient id `37549f60-b5a3-69cd-dea6-5a71c4bc23cf` is only the selector default when the patient query returns it.
 
 The allergy section query loads every `DOCUMENT_SECTION` row for that patient with LOINC `48765-2`. Citations are limited to elements whose code matches the allergy row. Any other code in that retrieval is labeled not quoted.
 
@@ -110,8 +110,8 @@ Database `PATIENT_360`, schema `CORE`. Warehouse size XS. Suggested warehouse na
 | `CLAIM` | `CLAIM_ID`, `PATIENT_ID`, `APPOINTMENT_ID`, `DIAGNOSIS_1 AS DIAGNOSIS1`, `SERVICE_TS AS SERVICE_DATE` |
 | `CLAIM_LINE` | `PATIENT_ID` |
 | `MEMBER_COVERAGE` | `PATIENT_ID`, `START_TS AS START_DATE`, `END_TS AS END_DATE`, `MEMBER_ID`, `PAYER_ID`, `PAYER_NAME` |
-| `DOCUMENT_SECTION` | `DOCUMENT_ID`, `PATIENT_ID`, `SECTION_LOINC`, `SECTION_TITLE`, `ELEMENT_ID`, `TEXT`, `CODE` |
-| `RISK_SCORE` + `RISK_COHORT` | `SCORE_BUCKET AS SCORE`, `PATIENT_COUNT`, `EVENT_RATE_PCT / 100 AS EVENT_RATE`, `COHORT_PATIENT_COUNT AS COHORT_N`, `COHORT_EVENT_COUNT AS EVENT_N`, `BASE_RATE_PCT / 100 AS BASE_RATE`, `GE2_PATIENT_COUNT`, `GE2_EVENT_RATE`, `INDEX_DATE`, `HORIZON_END`, `EXCLUDED_DEAD`, `EXCLUDED_BORN` |
+| `DOCUMENT_SECTION` | `DOCUMENT_ID`, `PATIENT_ID`, `SECTION_LOINC`, `SECTION_TITLE`, `ELEMENT_ID`, `TEXT`, `CODE`, `REJECTED_CODES` |
+| `RISK_SCORE` + `RISK_COHORT` | `SCORE_BUCKET AS SCORE`, `PATIENT_COUNT`, `EVENT_COUNT AS BUCKET_EVENT_COUNT`, `EVENT_RATE_PCT / 100 AS EVENT_RATE`, `COHORT_PATIENT_COUNT AS COHORT_N`, `COHORT_EVENT_COUNT AS EVENT_N`, `BASE_RATE_PCT / 100 AS BASE_RATE`, `GE2_PATIENT_COUNT`, `GE2_EVENT_RATE`, `INDEX_DATE`, `HORIZON_END`, `EXCLUDED_DEAD`, `EXCLUDED_BORN` |
 
 CSV names the views alias: `patients.Id` to `PATIENT_ID`, `FIRST`/`LAST` to `FIRST_NAME`/`LAST_NAME`, `encounters.Id` to `ENCOUNTER_ID`, `ENCOUNTERCLASS` to `ENCOUNTER_CLASS`, `claims.PATIENTID` to `PATIENT_ID`, `APPOINTMENTID` to `APPOINTMENT_ID`, `claims_transactions.PATIENTID` to `CLAIM_LINE.PATIENT_ID`. `MEMBER_COVERAGE` is `payer_transitions` left-joined to `payers.NAME`. `MEMBER_ID` stays null when the source span has none. `DOCUMENT_SECTION.DOCUMENT_ID` and `PATIENT_ID` are the same Synthea UUID. `CODE` on a section should be the narrative code that matches the CSV, not the first code attribute in a C-CDA entry.
 
@@ -151,14 +151,25 @@ An expected-check failure makes Snowflake CLI exit non-zero. No path replacement
 
 `snowflake.yml` deploys `CORE.PATIENT_360_APP` on warehouse `PATIENT_360_WH`. The stage keeps `streamlit/patient_360.py` with `app/` and `environment.yml` at the root; the page finds `app/` in its parent directory. The app runs on the Python 3.11 container runtime.
 
-Teammates get the analyst role, which reads `CORE` and the app but not `RAW`.
+Teammates normally use the analyst role, which reads `CORE` and the app but not `RAW`.
 `CORE.PATIENT` also omits direct identifiers, street/ZIP, precise geolocation, and
-income/expense fields:
+income/expense fields. The one-time owner runs `sql/96_team_deployer_handoff.sql` to grant
+`PATIENT_360_ADMIN` to `ASHOK`, `SAINATH`, and `SIDHARTH`. The app has been recreated once
+under that role because this account does not support `GRANT OWNERSHIP ON STREAMLIT`; the
+handoff script itself is now safe to re-run and never drops the app. Sai's login/email was
+updated directly in Snowflake and is not stored in the repository. The deployer role does
+not inherit loader access, cannot enter `RAW`, and is not `ACCOUNTADMIN`.
 
 ```text
-CREATE USER <teammate> PASSWORD = '<temporary>' MUST_CHANGE_PASSWORD = TRUE
-    DEFAULT_ROLE = PATIENT_360_ANALYST DEFAULT_WAREHOUSE = PATIENT_360_WH;
-GRANT ROLE PATIENT_360_ANALYST TO USER <teammate>;
+snow sql -c patient360 -f sql/96_team_deployer_handoff.sql
+```
+
+Each teammate configures a Snowflake CLI connection outside the repository with
+`role = "PATIENT_360_ADMIN"` and can then redeploy independently:
+
+```text
+snow streamlit deploy --replace -c patient360
+snow sql -c patient360 -f sql/95_app_grants.sql
 ```
 
 `AI_COMPLETE` uses the model typed on the page. The default text is `llama3.1-70b`. Trial accounts reject `AI_COMPLETE` (error 399258), and a model may be absent in-region; in either case leave narration off. A failed call leaves the deterministic answer in place.
@@ -181,9 +192,9 @@ These are the measured checks from the dataset inspection. They are not rows thi
 
 Question 1, when the load matches the files: Fexofenadine hydrochloride 60 MG Oral Tablet; code `997501`; start `2005-06-18T13:48:14Z`; document `37549f60-b5a3-69cd-dea6-5a71c4bc23cf`; section LOINC `10160-0`; elements `medications-desc-2` and `medications-code-2`; one medication row; encounter `37549f60-b5a3-69cd-bd30-c7a0b0133ccf`.
 
-Question 2: quoted code `609328004`, Allergic disposition, start `2005-06-18`, that same encounter. Code `419199007` may appear only as not the quoted allergy.
+Question 2 follows the selected member. For Mosciski it quotes code `609328004`, Allergic disposition, start `2005-06-18`, and the matching encounter. Code `419199007` may appear only as not the quoted allergy. Other members return all of their cited allergy rows or the scoped zero-row dataset statement.
 
-Question 3, when `RISK_SCORE` matches the frozen measurement: cohort 97, events 14, base rate 14.43%, scores 0/1/2/3/4 = 19/37/35/6/0 patients, rates 5.26%, 16.22%, 14.29%, 33.33%, and no rate on the zero-patient score, score 2 or higher = 41 patients at 17.07%. The sentence on screen is that score 2 sits below score 1 when the retrieved rates say so.
+Question 3, when `RISK_SCORE` matches the frozen measurement: cohort 97, events 14, base rate 14.43%, scores 0/1/2/3/4 = 19/37/35/6/0 patients, events = 1/6/5/2/0, and observed rates = 5.26%, 16.22%, 14.29%, 33.33%, and no rate on the zero-patient score. The screen explicitly says score 2 sits below score 1, score 3 has only six members, score 4 is empty, and the buckets do not establish monotonic stratification.
 
 ## Sources
 

@@ -4,7 +4,7 @@ MEDICATION_QUESTION = (
     "Which antihistamine is on Alexandra16 Mosciski958's medication list, "
     "and where is it written?"
 )
-ALLERGY_QUESTION = "What allergy is recorded for that patient on 18 June 2005?"
+ALLERGY_QUESTION = "Show all recorded allergies for this selected member with source evidence."
 RISK_QUESTION = (
     "How many patients in the frozen 2023 cohort had an emergency or inpatient "
     "encounter in 2023, and how did the point count sort them?"
