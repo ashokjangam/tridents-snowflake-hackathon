@@ -50,7 +50,8 @@ METRICS = {
         "question": "If production stopped today, how many days would our stock last?",
         "how": "Usable stock (on hand, minus units on quality hold or already promised to someone) compared with demand over "
                "the last 28 days. It is a snapshot on a date, not a monthly total.",
-        "empty": "Not published for this selection yet. Ask Concordia computes it live for any part and site.",
+        "empty": "Days of inventory is published for finished motors at each site and across the network. Components are "
+                 "used up in production, so they have no published stock cover. Choose a motor (MM-4xx).",
     },
     "LANDED_COST_PER_ACCEPTED_UNIT": {
         "short": "Landed cost per unit", "team": "Finance", "kind": "usd", "code": "Landed cost / unit",
@@ -127,23 +128,49 @@ PAGES = {
 st.markdown(
     f"""
 <style>
-  .stApp {{ background: #F5F7FA; color: {NAVY}; }}
-  .block-container {{ padding-top: 1.4rem; padding-bottom: 3rem; max-width: 1380px; }}
+  .stApp {{ background: radial-gradient(1200px 500px at 85% -10%, #E7EEF8 0%, #F5F7FA 55%) fixed; color: {NAVY}; }}
+  .block-container {{ padding-top: 1.2rem; padding-bottom: 3rem; max-width: 1440px; }}
   h1, h2, h3, h4 {{ color: {NAVY}; letter-spacing: -0.01em; }}
   section[data-testid="stSidebar"] {{ background: #FFFFFF; border-right: 1px solid {LINE}; }}
-  .hero {{ background: linear-gradient(120deg, {NAVY} 0%, {BLUE} 62%, {TEAL} 100%); border-radius: 18px; padding: 24px 30px;
-          color: #fff; margin-bottom: 16px; }}
+  section[data-testid="stSidebar"] div[role="radiogroup"] label {{ border-radius: 10px; padding: 4px 8px; transition: background .12s; }}
+  section[data-testid="stSidebar"] div[role="radiogroup"] label:hover {{ background: #F1F5FA; }}
+  .hero {{ background: linear-gradient(120deg, {NAVY} 0%, {BLUE} 62%, {TEAL} 100%); border-radius: 20px; padding: 26px 30px;
+          color: #fff; margin-bottom: 16px; box-shadow: 0 12px 32px rgba(16,42,67,.18); }}
   .hero h1 {{ color: #fff; font-size: 2rem; margin: 0 0 6px 0; }}
-  .hero p {{ color: #DCE8F5; margin: 0; font-size: 1.02rem; }}
+  .hero p {{ color: #DCE8F5; margin: 0; font-size: 1.02rem; max-width: 900px; }}
   .hero .tag {{ display: inline-block; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.28);
                border-radius: 999px; padding: 3px 12px; font-size: .78rem; margin-right: 6px; margin-top: 12px; color: #fff; }}
   .card {{ background: #FFFFFF; border: 1px solid {LINE}; border-radius: 16px; padding: 16px 16px 12px 16px; height: 100%;
-          box-shadow: 0 1px 2px rgba(16,42,67,.04); }}
+          min-height: 178px; box-shadow: 0 1px 2px rgba(16,42,67,.04); transition: box-shadow .15s, transform .15s, border-color .15s; }}
+  .card:hover {{ box-shadow: 0 10px 26px rgba(16,42,67,.10); transform: translateY(-1px); border-color: #BFCFE0; }}
+  .card.empty {{ background: repeating-linear-gradient(135deg, #FFFFFF 0 12px, #FAFBFD 12px 24px); border-style: dashed; }}
   .card .team {{ font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: {SLATE}; font-weight: 700; }}
   .card .name {{ font-size: .98rem; font-weight: 650; color: {NAVY}; margin-top: 2px; }}
   .card .value {{ font-size: 2.1rem; font-weight: 750; color: {NAVY}; font-variant-numeric: tabular-nums; margin: 8px 0 4px 0; line-height: 1.1; }}
-  .card .value.muted {{ color: #8CA0B3; font-size: 1.3rem; }}
+  .card .value.muted {{ color: #6B8199; font-size: 1.15rem; font-weight: 700; }}
+  .card .why {{ font-size: .8rem; color: {SLATE}; line-height: 1.45; margin-top: 4px; }}
   .card .meta {{ font-size: .8rem; color: {SLATE}; margin-top: 6px; line-height: 1.45; }}
+  .chip {{ display: inline-block; border-radius: 8px; padding: 2px 9px; font-size: .74rem; font-weight: 650; margin: 0 6px 6px 0;
+          background: #EEF3FA; color: {BLUE}; border: 1px solid #D6E2F3; }}
+  .chip.ok {{ background: #E6F6F4; color: #0B6E69; border-color: #C5EAE5; }}
+  .chip.warn {{ background: #FDF3E1; color: #8A5A12; border-color: #F3DDB4; }}
+  .explain {{ background: #FFFFFF; border: 1px solid {LINE}; border-radius: 14px; padding: 14px 16px; font-size: .9rem; line-height: 1.55; }}
+  .explain .k {{ font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: {TEAL}; font-weight: 800; margin-bottom: 4px; }}
+  .explain code {{ background: #F1F4F8; border-radius: 5px; padding: 0 5px; font-size: .82rem; }}
+  .stButton > button {{ border-radius: 10px; border: 1px solid {LINE}; transition: all .12s; }}
+  .stButton > button:hover {{ border-color: {BLUE}; color: {BLUE}; background: #F4F8FE; }}
+  div[data-testid="stDataFrame"] {{ border: 1px solid {LINE}; border-radius: 12px; overflow: hidden; background: #FFFFFF; }}
+  div[data-testid="stExpander"] details {{ border-radius: 12px; border-color: {LINE}; background: #FFFFFF; }}
+  @media (max-width: 1100px) {{
+    .card .value {{ font-size: 1.6rem; }}
+    .card {{ min-height: 150px; padding: 12px; }}
+    .hero h1 {{ font-size: 1.55rem; }}
+  }}
+  @media (max-width: 640px) {{
+    .block-container {{ padding-left: .8rem; padding-right: .8rem; }}
+    .hero {{ padding: 18px; border-radius: 14px; }}
+    .tip .tt {{ width: 220px; }}
+  }}
   .pill {{ display: inline-block; border-radius: 999px; padding: 2px 10px; font-size: .72rem; font-weight: 700; letter-spacing: .02em; }}
   .reason {{ display: inline-block; background: #F1F4F8; color: #34495E; border-radius: 6px; padding: 1px 7px; font-size: .74rem;
             margin: 3px 4px 0 0; }}
@@ -346,11 +373,91 @@ def present(value) -> bool:
     return isinstance(value, str) and value != ""
 
 
-def plain_sentence(metric: str, row) -> str:
+MISSING = "—"
+
+
+def blank(value) -> bool:
+    if value is None:
+        return True
+    if isinstance(value, str):
+        return value.strip().lower() in ("", "none", "nan", "nat", "null")
+    try:
+        return bool(pd.isna(value))
+    except (TypeError, ValueError):
+        return False
+
+
+def tidy(frame: pd.DataFrame) -> pd.DataFrame:
+    """Display copy only: absent values read as a dash, never as None, nan or NaT."""
+    out = frame.copy()
+    for column in out.columns:
+        if out[column].map(blank).any():
+            # A column mixing numbers and dashes is held as text so Arrow serialisation never fails.
+            out[column] = out[column].astype(object).map(lambda v: MISSING if blank(v) else (v if isinstance(v, str) else trim(v)))
+    return out
+
+
+def show(where, frame: pd.DataFrame, **kwargs):
+    kwargs.setdefault("hide_index", True)
+    kwargs.setdefault("use_container_width", True)
+    where.dataframe(tidy(frame), **kwargs)
+
+
+EMPTY_HEAD = {
+    "INBOUND_SUPPLIER_OTD": "No supplier deliveries due",
+    "OUTBOUND_CUSTOMER_OTD": "No customer deliveries due",
+    "UNIT_FILL_RATE": "No customer orders",
+    "DAYS_INVENTORY": "No stock snapshot",
+    "LANDED_COST_PER_ACCEPTED_UNIT": "No goods received",
+}
+EMPTY_NOUN = {
+    "INBOUND_SUPPLIER_OTD": "supplier order lines were due",
+    "OUTBOUND_CUSTOMER_OTD": "customer order lines were due",
+    "UNIT_FILL_RATE": "customer orders were placed",
+    "DAYS_INVENTORY": "stock snapshot was published",
+    "LANDED_COST_PER_ACCEPTED_UNIT": "goods were received from a supplier",
+}
+
+
+def gap(metric: str, data: pd.DataFrame, kind: str, month) -> dict:
+    """Why a card has no published row: the measure never applies here, or nothing happened in this month."""
+    history = data[(data.RECENCY == 1) & (data.METRIC_ID == metric) & (data.AS_OF_KIND == kind)]
+    months = sorted({m for m in history.PERIOD_START.map(iso_day) if m})
+    if not months:
+        return {"headline": "Does not apply here", "why": METRICS[metric]["empty"], "near": [], "applies": False}
+    target = iso_day(month) or ""
+    earlier = [m for m in months if m < target][-1:]
+    later = [m for m in months if m > target][:1]
+    near = earlier + later
+    hint = " Closest months with data: " + " and ".join(month_label(m) for m in near) + "." if near else ""
+    return {"headline": EMPTY_HEAD[metric],
+            "why": f"No {EMPTY_NOUN[metric]} in {month_label(month)} for this selection, so there is nothing to score. "
+                   f"That is not 0%.{hint}",
+            "near": near, "applies": True}
+
+
+PICKER_KEYS = ("cc_month", "bridge_month", "asof_month")
+
+
+def jump(month: str):
+    # Pickers re-read focus_month when their own state is cleared; a month outside a picker's options is never forced on it.
+    st.session_state.focus_month = month
+    for key in PICKER_KEYS:
+        st.session_state.pop(key, None)
+
+
+def jump_buttons(where, info: dict | None, key: str):
+    if not info or not info.get("near"):
+        return
+    for m in info["near"]:
+        where.button(f"Go to {month_label(m)} →", key=f"{key}_{m}", on_click=jump, args=(m,), use_container_width=True)
+
+
+def plain_sentence(metric: str, row, info: dict | None = None) -> str:
     """One plain-English line built only from strings the governed SQL already returned."""
     m = METRICS[metric]
     if row is None:
-        return m["empty"]
+        return (info or {}).get("why") or m["empty"]
     status = row.get("STATUS")
     n, d, shown = row.get("NUMERATOR"), row.get("DENOMINATOR"), row.get("DISPLAY")
     if status == "FORBIDDEN":
@@ -377,14 +484,16 @@ def plain_sentence(metric: str, row) -> str:
     return text.strip() or STATUS_PLAIN.get(status or "", "No published value.")
 
 
-def headline(metric: str, row) -> str:
+def headline(metric: str, row, info: dict | None = None) -> str:
     kind = METRICS[metric]["kind"]
-    if row is None or not present(row.get("DISPLAY")):
-        if row is not None and row.get("STATUS") == "INCOMPLETE" and present(row.get("DIAGNOSTIC_DISPLAY")):
+    if row is None:
+        return f'<div class="value muted">{esc((info or {}).get("headline") or EMPTY_HEAD[metric])}</div>'
+    if not present(row.get("DISPLAY")):
+        if row.get("STATUS") == "INCOMPLETE" and present(row.get("DIAGNOSTIC_DISPLAY")):
             return f'<div class="value muted">Not final <span style="font-size:.85rem">(partial ${esc(row["DIAGNOSTIC_DISPLAY"])})</span></div>'
-        if row is not None and row.get("STATUS") == "FORBIDDEN":
-            return '<div class="value muted">Hidden</div>'
-        return f'<div class="value muted">{"No value" if row is not None else "Nothing to measure"}</div>'
+        if row.get("STATUS") == "FORBIDDEN":
+            return '<div class="value muted">Hidden for your role</div>'
+        return f'<div class="value muted">{esc(STATUS_LABEL.get(row.get("STATUS") or "", "Not published"))}</div>'
     if kind == "ratio" and present(row.get("PERCENT_DISPLAY")):
         return f'<div class="value">{esc(row["PERCENT_DISPLAY"])}<span style="font-size:1.1rem">%</span></div>'
     if kind == "usd":
@@ -394,8 +503,14 @@ def headline(metric: str, row) -> str:
     return f'<div class="value">{esc(row["DISPLAY"])}</div>'
 
 
-def card(metric: str, row, note: str = "", title: str | None = None) -> str:
+def card(metric: str, row, note: str = "", title: str | None = None, info: dict | None = None) -> str:
     m = METRICS[metric]
+    if row is None:
+        body = (f"<b>{esc(m['question'])}</b><br><br>{esc(m['how'])}<br><br>Owner: {esc(m['team'])} · governed name: {esc(m['code'])}")
+        why = (info or {}).get("why") or m["empty"]
+        return (f'<div class="card empty"><div class="team">{esc(m["team"])}</div>'
+                f'<div class="name">{esc(title or m["short"])}{tip(body)}</div>'
+                f'{headline(metric, None, info)}<div class="why">{esc(why)}</div></div>')
     meta = []
     if row is not None:
         if present(row.get("NUMERATOR")) and present(row.get("DENOMINATOR")) and m["kind"] == "ratio":
@@ -542,6 +657,7 @@ with st.sidebar:
 
 BASE = results(persona)
 MONTHS = month_options(BASE.PERIOD_START)
+FLOW_MONTHS = month_options(BASE[BASE.METRIC_ID != "DAYS_INVENTORY"].PERIOD_START)
 FINAL_ROWS = BASE[BASE.AS_OF_KIND == "final"]
 FINAL_AS_OF = day_label(FINAL_ROWS.AS_OF.max()) if not FINAL_ROWS.empty else "latest load"
 
@@ -591,6 +707,16 @@ def page_start():
     c.markdown('<div class="story"><div class="k">What Concordia does</div>Writes each measure down once, calculates it once inside '
                'Snowflake, refuses to guess when data is missing, remembers what was known on each date, and shows the evidence '
                'behind every number.</div>', unsafe_allow_html=True)
+    motors = int((D["items"].ITEM_TYPE == "FINISHED").sum())
+    components = int(len(D["items"]) - motors)
+    span = f"{month_label(FLOW_MONTHS[0])} to {month_label(FLOW_MONTHS[-1])}" if FLOW_MONTHS else "no months yet"
+    st.markdown(
+        f'<div class="explain" style="margin-top:12px"><div class="k">How much data is here</div>'
+        f'<b>{len(FLOW_MONTHS)} months</b> ({esc(span)}) · <b>{motors}</b> motors · <b>{components}</b> components. Every part, '
+        f'site, region, supplier and customer is published for every month it had activity, not only the demo story '
+        f'(MM-440 in May 2026). Small selections are thin, though: one motor in one customer region often has only '
+        f'1 to 5 order lines in a month, and some months have none. Those show as <b>No customer deliveries due</b>, which is '
+        f'not 0%. Pick All parts or a whole part for steadier numbers.</div>', unsafe_allow_html=True)
     st.markdown('<div class="section">The five numbers, in plain words</div>', unsafe_allow_html=True)
     cols = st.columns(5)
     for col, (metric, m) in zip(cols, METRICS.items()):
@@ -616,13 +742,13 @@ def card_row(data: pd.DataFrame, metric: str, kind: str, month):
     return pick(current, METRIC_ID=metric)
 
 
-def value_text(metric: str, row) -> str:
+def value_text(metric: str, row, info: dict | None = None) -> str:
     if row is None:
-        return "Nothing to measure"
+        return (info or {}).get("headline") or EMPTY_HEAD[metric]
     if row.get("STATUS") == "FORBIDDEN":
         return "Hidden for this role"
     if not present(row.get("DISPLAY")):
-        return STATUS_LABEL.get(row.get("STATUS"), "No value")
+        return STATUS_LABEL.get(row.get("STATUS"), "Not published")
     kind = METRICS[metric]["kind"]
     if kind == "ratio" and present(row.get("PERCENT_DISPLAY")):
         return f'{row["PERCENT_DISPLAY"]}% ({trim(row["NUMERATOR"])} of {trim(row["DENOMINATOR"])})'
@@ -631,6 +757,55 @@ def value_text(metric: str, row) -> str:
     if kind == "days":
         return f'{trim(row["DISPLAY"])} days'
     return str(row["DISPLAY"])
+
+
+COVERAGE_STATE = {"COMPLETE": "Complete", "INCOMPLETE": "Not final", "ABSTAIN": "Can't score", "ZERO_DENOMINATOR": "Nothing due",
+                  "ZERO_DEMAND": "Nothing due", "FORBIDDEN": "Hidden for your role"}
+COVERAGE_COLORS = {"Complete": TEAL, "Not final": "#E3A33B", "Can't score": "#8CA0B3", "Nothing due": "#C9D5E2",
+                   "Hidden for your role": "#E7A1A1", "No activity": "#EEF2F6"}
+
+
+def coverage_map(data: pd.DataFrame, kind: str, month):
+    section("Where this selection has data",
+            "Each square is one measure in one month for the part and scope chosen above. Grey means nothing happened that month "
+            "(no orders due, no goods received), which is different from a score of zero. Hover a square for the governed value.",
+            "Pick a coloured month in the Month box to see its cards.")
+    metrics = [m for m in METRICS if m != "DAYS_INVENTORY"]
+    rows = data[(data.RECENCY == 1) & (data.AS_OF_KIND == kind) & data.METRIC_ID.isin(metrics)]
+    lookup = {(r["METRIC_ID"], iso_day(r["PERIOD_START"])): r for r in rows.to_dict("records")}
+    selected = iso_day(month)
+    cells = []
+    for metric in metrics:
+        for m in FLOW_MONTHS:
+            r = lookup.get((metric, m))
+            if r is None:
+                state, shown, counted, out_of = "No activity", "Nothing happened this month", MISSING, MISSING
+            else:
+                state = COVERAGE_STATE.get(r["STATUS"], STATUS_LABEL.get(r["STATUS"], "Not published"))
+                shown = r["DISPLAY"] if present(r.get("DISPLAY")) else state
+                counted = trim(r["NUMERATOR"]) if present(r.get("NUMERATOR")) else MISSING
+                out_of = trim(r["DENOMINATOR"]) if present(r.get("DENOMINATOR")) else MISSING
+            cells.append({"Measure": METRICS[metric]["short"], "Month": month_label(m), "Order": m, "State": state,
+                          "Governed value": shown, "Counted": counted, "Out of": out_of, "Selected": m == selected})
+    frame = pd.DataFrame(cells)
+    if frame.empty:
+        return
+    order = [METRICS[m]["short"] for m in metrics]
+    x = alt.X("Month:N", sort=alt.EncodingSortField(field="Order", order="ascending"), title=None, axis=alt.Axis(labelAngle=-40))
+    y = alt.Y("Measure:N", sort=order, title=None, axis=alt.Axis(labelLimit=240))
+    tiles = (alt.Chart(frame).mark_rect(cornerRadius=4, stroke="#FFFFFF", strokeWidth=2)
+             .encode(x=x, y=y,
+                     color=alt.Color("State:N", scale=alt.Scale(domain=list(COVERAGE_COLORS), range=list(COVERAGE_COLORS.values())),
+                                     legend=alt.Legend(orient="top", title=None)),
+                     tooltip=["Measure", "Month", "State", "Governed value", "Counted", "Out of"]))
+    marker = (alt.Chart(frame[frame.Selected]).mark_rect(filled=False, stroke=NAVY, strokeWidth=2.5, cornerRadius=4)
+              .encode(x=x, y=y))
+    st.altair_chart((tiles + marker).properties(height=200), use_container_width=True)
+    active = frame[frame.State != "No activity"]
+    if active.empty:
+        st.caption("Nothing was recorded for this selection in any month. Try All parts, another part, or a wider scope.")
+    else:
+        st.caption(f"{active.Order.nunique()} of {len(FLOW_MONTHS)} months have at least one published answer for this selection.")
 
 
 def page_command_center():
@@ -665,8 +840,12 @@ def page_command_center():
     cols = st.columns(5)
     for col, metric in zip(cols, METRICS):
         row = card_row(data, metric, kind, month)
+        info = gap(metric, data, kind, month) if row is None else None
         note = f"stock snapshot on {day_label(row['AS_OF'])}" if metric == "DAYS_INVENTORY" and row is not None else ""
-        col.markdown(card(metric, row, note), unsafe_allow_html=True)
+        col.markdown(card(metric, row, note, info=info), unsafe_allow_html=True)
+        jump_buttons(col, info, f"cc_{metric}")
+
+    coverage_map(data, kind, month)
 
     section("Same question, three teams",
             "Planning, procurement and logistics each ask for this selection. The database answers each one separately with its own "
@@ -676,15 +855,17 @@ def page_command_center():
     team_data = {p: results(p, item, facility, geo) for p in teams}
     table_rows = []
     for metric in METRICS:
-        shown = {p: value_text(metric, card_row(team_data[p], metric, kind, month)) for p in teams}
+        picked = {p: card_row(team_data[p], metric, kind, month) for p in teams}
+        shown = {p: value_text(metric, picked[p], gap(metric, team_data[p], kind, month) if picked[p] is None else None)
+                 for p in teams}
         visible = {v for v in shown.values() if v != "Hidden for this role"}
         verdict = "Same for every team" if len(visible) <= 1 else "DIFFERENT — investigate"
         if len(visible) == 1 and len(set(shown.values())) > 1:
             verdict = "Same where visible; hidden by role"
-        if visible <= {"Nothing to measure"}:
-            verdict = "Nothing to compare"
+        if all(picked[p] is None for p in teams):
+            verdict = "Same for every team: nothing happened"
         table_rows.append({"Measure": METRICS[metric]["short"], **{labels[p].split(" — ")[-1]: shown[p] for p in teams}, "Check": verdict})
-    st.dataframe(pd.DataFrame(table_rows), hide_index=True, use_container_width=True)
+    show(st, pd.DataFrame(table_rows))
     st.caption("The full check across every published answer runs as real Snowflake roles in `scripts/verify.py personas`.")
 
     section("Trend", "Each point is the governed answer for one month. The dark line is what we know now; the light line is what we "
@@ -750,8 +931,7 @@ def page_command_center():
         shown = frame[frame.Value.notna()].sort_values("Value").tail(15)
         if shown.empty:
             b2.info("Every row in this split is hidden or not final, so there is nothing to chart.")
-            b2.dataframe(frame[["Name", "Status", "COVERAGE"]].rename(columns={"COVERAGE": "Data coverage"}), hide_index=True,
-                         use_container_width=True)
+            show(b2, frame[["Name", "Status", "COVERAGE"]].rename(columns={"COVERAGE": "Data coverage"}))
         else:
             bars = (alt.Chart(shown).mark_bar(cornerRadiusEnd=4, color=TEAL)
                     .encode(y=alt.Y("Name:N", sort="-x", title=None),
@@ -919,7 +1099,7 @@ def analyst_answer(question: str, who: str) -> dict:
         return out
     alias = governed_alias(question)
     if alias:
-        verdict = "CLARIFY" if alias["response"] == "CLARIFY" else "REJECTED"
+        verdict = "CLARIFY" if alias["response"] == "CLARIFY" else "REJECT"
         out.update({"text": alias["note"], "suggestions": [],
                     "run": {"verdict": verdict, "reason": alias["note"], "rows": [], "columns": []}})
         return out
@@ -955,21 +1135,167 @@ def analyst_answer(question: str, who: str) -> dict:
     return out
 
 
+COLUMN_PLAIN = {
+    "METRIC_ID": "Measure", "MONTH": "Month", "STATUS": "Status", "GOVERNED_VALUE_TEXT": "Governed value", "PART_ID": "Part",
+    "PART_NAME": "Part name", "SITE_NAME": "Site", "REGION_NAME": "Region", "SUPPLIER_NAME": "Supplier", "CUSTOMER_NAME": "Customer",
+    "REASONS": "Why not final", "ORDER_LINE_ID": "Order line", "OUTCOME": "Result", "CAUSE_CODE": "Cause code", "CAUSE": "Cause",
+    "DUE_ON": "Due", "COMPLETED_ON": "Completed", "MISSED_LINES": "Missed lines", "PO_LINE_ID": "PO line",
+    "SUPPLIER_PROMISE_ON": "Supplier promised", "RECEIPT_ID": "Receipt", "RECEIVED_ON": "Received", "ACCEPTED_ON": "Accepted",
+    "LOT_ID": "Lot", "RECEIVED_QTY": "Received qty", "SOURCE_SYSTEM": "System", "SOURCE_ITEM_KEY": "Their code",
+}
+ANSWER_CONTEXT = ("SCOPE_LEVEL", "KNOWN_AS_OF", "ACCESS_NOTE")
+SCOPE_PLAIN = {"NETWORK": "Whole business", "PART": "One part, all sites and regions", "PART_SITE": "One part at one site",
+               "PART_REGION": "One part in one customer region", "SITE": "One site", "REGION": "One customer region",
+               "SUPPLIER": "One supplier", "CUSTOMER": "One customer"}
+CLARIFY_REWRITES = [
+    (r"\b(otif|on[- ]time in full)\b", None,
+     [("Customer on-time delivery instead", "outbound customer OTD"), ("Unit fill rate instead", "unit fill rate")]),
+    (r"\b(otd|on[- ]time delivery)\b", r"\b(inbound|supplier|vendor|outbound|customer)\b",
+     [("Supplier on-time delivery (deliveries to us)", "inbound supplier OTD"),
+      ("Customer on-time delivery (deliveries to customers)", "outbound customer OTD")]),
+    (r"\bfill rate\b", r"\bunit fill rate\b", [("Unit fill rate (units shipped out of units ordered)", "unit fill rate")]),
+    (r"\binventory days\b", None, [("Days of inventory", "days of inventory")]),
+    (r"\bcost\b", r"\blanded cost\b", [("Landed cost per accepted unit", "landed cost per accepted unit")]),
+]
+
+
+def clarify_options(question: str) -> list[tuple[str, str]]:
+    for pattern, skip, choices in CLARIFY_REWRITES:
+        if re.search(pattern, question, re.I) and not (skip and re.search(skip, question, re.I)):
+            return [(label, re.sub(pattern, phrase, question, count=1, flags=re.I)) for label, phrase in choices]
+    return []
+
+
+def cell_text(column: str, value):
+    if blank(value):
+        return MISSING
+    if column == "METRIC_ID":
+        return METRICS.get(value, {}).get("short", value)
+    if column in ("STATUS", "OUTCOME"):
+        return STATUS_LABEL.get(value) or DRIVER_PLAIN.get(value) or str(value).replace("_", " ").capitalize()
+    if column == "MONTH":
+        return month_label(value)
+    if column == "REASONS":
+        return ", ".join(plain_reason(r) for r in as_list(value)) or MISSING
+    return value
+
+
+def answer_view(run: dict) -> tuple[pd.DataFrame, dict, pd.DataFrame | None]:
+    """Plain-language table, the shared context columns pulled out, and an optional trend frame."""
+    raw = pd.DataFrame(run["rows"], columns=run["columns"])
+    context = {}
+    for column in ANSWER_CONTEXT:
+        if column in raw.columns and raw[column].map(lambda v: MISSING if blank(v) else v).nunique() <= 1:
+            values = [v for v in raw[column] if not blank(v)]
+            context[column] = values[0] if values else None
+            raw = raw.drop(columns=column)
+    governed = [c for c in run.get("governed_columns") or [] if c in raw.columns]
+    trend = None
+    if governed and "MONTH" in raw.columns and raw.MONTH.nunique() >= 3:
+        trend = pd.DataFrame({"Month": pd.to_datetime(raw.MONTH.map(iso_day), errors="coerce"),
+                              "Value": pd.to_numeric(raw[governed[0]], errors="coerce"),
+                              "Measure": raw.METRIC_ID.map(lambda m: METRICS.get(m, {}).get("short", m)) if "METRIC_ID" in raw else "Value",
+                              "Shown": raw.GOVERNED_VALUE_TEXT if "GOVERNED_VALUE_TEXT" in raw else raw[governed[0]],
+                              "Status": raw.STATUS.map(lambda s: STATUS_LABEL.get(s, s)) if "STATUS" in raw else ""}).dropna(subset=["Month", "Value"])
+    if "GOVERNED_VALUE_TEXT" in raw.columns:
+        raw = raw.drop(columns=[c for c in governed if c != "GOVERNED_VALUE_TEXT"])
+    view = pd.DataFrame({COLUMN_PLAIN.get(c, c.replace("_", " ").capitalize()): raw[c].map(lambda v, c=c: cell_text(c, v))
+                         for c in raw.columns})
+    return view, context, trend
+
+
+def headline_value(run: dict) -> str:
+    """One governed answer: the value as the contract displays it, plus its percentage form for ratio measures."""
+    if len(run.get("rows") or []) != 1:
+        return ""
+    row = dict(zip(run["columns"], run["rows"][0]))
+    metric, shown = row.get("METRIC_ID"), row.get("GOVERNED_VALUE_TEXT")
+    if metric not in METRICS or blank(shown):
+        return ""
+    kind = METRICS[metric]["kind"]
+    try:
+        big = f"{float(shown):.1%}" if kind == "ratio" else (f"${shown}" if kind == "usd" else f"{trim(shown)} days")
+    except ValueError:
+        big = str(shown)
+    where = " · ".join(str(row[c]) for c in ("PART_ID", "SITE_NAME", "REGION_NAME", "SUPPLIER_NAME", "CUSTOMER_NAME") if not blank(row.get(c)))
+    return (f'<div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin:10px 0 2px 0">'
+            f'<div class="card" style="min-height:0;padding:12px 18px;flex:0 0 auto"><div class="team">{esc(METRICS[metric]["short"])}</div>'
+            f'<div class="value" style="margin:4px 0 0 0">{esc(big)}</div>'
+            f'<div class="meta">{esc(month_label(row.get("MONTH")))}{" · " + esc(where) if where else ""} · governed value {esc(shown)}</div></div>'
+            f'{pill(row.get("STATUS")) if row.get("STATUS") else ""}</div>')
+
+
+def ask_again(question: str):
+    # Runs as a button callback, before the page reads the pending question on the next run.
+    st.session_state.pending = question
+
+
+def run_metric_ids(run: dict) -> set:
+    if "METRIC_ID" not in (run.get("columns") or []):
+        return set()
+    index = run["columns"].index("METRIC_ID")
+    return {r[index] for r in run.get("rows") or [] if not blank(r[index])}
+
+
+def answer_route(a: dict) -> str:
+    if a.get("error"):
+        return '<span class="chip warn">Cortex Analyst unavailable</span>'
+    if a.get("fallback"):
+        return '<span class="chip ok">Approved question · steward-written query, no AI needed</span>'
+    if a.get("sql"):
+        return '<span class="chip">Cortex Analyst wrote the query · guard checked it</span>'
+    if a.get("attempts"):
+        return '<span class="chip">Cortex Analyst needs more detail</span>'
+    return '<span class="chip warn">Governed vocabulary rule</span>'
+
+
 def render_analyst(entry: dict):
     a = entry["analyst"]
     run = a.get("run") or {}
     verdict = run.get("verdict")
-    st.markdown(f'<div class="answer"><div class="q">{esc(entry["persona_label"])} asked Cortex Analyst</div>'
-                f'<div style="font-weight:650;font-size:1.05rem;margin-bottom:10px">{esc(entry["question"])}</div>'
-                f'{pill(verdict) if verdict else pill("CLARIFY")}'
-                f'<div class="n" style="margin-top:8px">{esc(a.get("text") or "")}</div>'
-                f'{"<div class=kv>" + esc(run.get("reason") or run.get("note") or "") + "</div>" if run else ""}</div>',
+    detail = run.get("reason") or run.get("note") or ""
+    text = a.get("text") or ""
+    st.markdown(f'<div class="answer"><div class="q">{esc(entry["persona_label"])} asked</div>'
+                f'<div style="font-weight:650;font-size:1.05rem;margin-bottom:8px">{esc(entry["question"])}</div>'
+                f'{answer_route(a)}{pill(verdict) if verdict else pill("REJECTED" if a.get("error") else "CLARIFY")}'
+                f'{headline_value(run) if verdict == "VERIFIED" else ""}'
+                f'<div class="n" style="margin-top:8px">{esc(text)}</div>'
+                f'{"<div class=kv>" + esc(detail) + "</div>" if detail and detail.strip() != text.strip() else ""}</div>',
                 unsafe_allow_html=True)
+    if verdict in ("CLARIFY", "REJECT", "REJECTED") and not run.get("sql"):
+        options = clarify_options(entry["question"])
+        if options:
+            st.caption("Pick what you meant and Concordia will ask again. Governed measures are always shown separately, "
+                       "never blended into one number.")
+            cols = st.columns(len(options))
+            for i, (label, rewritten) in enumerate(options):
+                cols[i].button(label, key=f"clar{entry['id']}_{i}", use_container_width=True, help=rewritten,
+                               on_click=ask_again, args=(rewritten,))
     if verdict in ("VERIFIED", "DESCRIPTIVE") and run.get("rows"):
-        frame = pd.DataFrame(run["rows"], columns=[c.replace("_", " ").lower() for c in run["columns"]])
-        st.dataframe(frame, hide_index=True, use_container_width=True)
+        view, context, trend = answer_view(run)
+        if trend is not None and not trend.empty:
+            ids = run_metric_ids(run)
+            ratio = bool(ids) and all(METRICS.get(m, {}).get("kind") == "ratio" for m in ids)
+            st.altair_chart(
+                alt.Chart(trend).mark_line(point=alt.OverlayMarkDef(filled=True, size=50), strokeWidth=2.5)
+                .encode(x=alt.X("Month:T", axis=alt.Axis(format="%b %y", title=None)),
+                        y=alt.Y("Value:Q", title=None, scale=alt.Scale(zero=False), axis=alt.Axis(format=".0%" if ratio else ",.2f")),
+                        color=alt.Color("Measure:N", legend=alt.Legend(orient="top", title=None)),
+                        tooltip=["Measure", alt.Tooltip("Month:T", format="%b %Y"), alt.Tooltip("Shown", title="Governed value"), "Status"])
+                .properties(height=240), use_container_width=True)
+        show(st, view)
+        notes = []
+        if context.get("SCOPE_LEVEL"):
+            notes.append("Scope: " + SCOPE_PLAIN.get(context["SCOPE_LEVEL"], str(context["SCOPE_LEVEL"])))
+        if context.get("KNOWN_AS_OF"):
+            notes.append("Known as of: " + ("today (final)" if context["KNOWN_AS_OF"] == "final" else "5th of the next month (early)"))
+        if context.get("ACCESS_NOTE"):
+            notes.append(str(context["ACCESS_NOTE"]))
+        if notes:
+            st.caption(" · ".join(notes))
     elif verdict in ("VERIFIED", "DESCRIPTIVE"):
-        st.info("The query ran but matched no governed answers for that selection.")
+        st.info("The query ran, but nothing was published for that exact selection: no orders, receipts or stock were recorded "
+                "there. Try a wider scope (the whole part instead of one region) or a different month.")
     extra = a.get("follow_up") or {}
     extra_run = extra.get("run") or {}
     if extra_run.get("verdict") in ("VERIFIED", "DESCRIPTIVE"):
@@ -977,23 +1303,34 @@ def render_analyst(entry: dict):
                     'answer, with the cause recorded for each miss. Same publish run, so they add up to the numbers above.</div>',
                     unsafe_allow_html=True)
         if extra_run.get("rows"):
-            st.dataframe(pd.DataFrame(extra_run["rows"], columns=[c.replace("_", " ").lower() for c in extra_run["columns"]]),
-                         hide_index=True, use_container_width=True)
+            show(st, answer_view(extra_run)[0])
         else:
             st.info("No order lines match for this persona.")
         with st.expander("The approved follow-up query"):
             st.code(extra.get("sql") or "", language="sql")
     for i, text in enumerate(a.get("suggestions") or []):
-        if st.button(text, key=f"sug{entry['id']}_{i}", use_container_width=True):
-            st.session_state.pending = text
+        st.button(text, key=f"sug{entry['id']}_{i}", use_container_width=True, on_click=ask_again, args=(text,))
     if a.get("sql"):
         with st.expander("The SQL Cortex Analyst wrote, and what the guard checked"):
             st.code(a["sql"], language="sql")
             st.caption(f"Attempts: {a.get('attempts')} · scope rows checked: {run.get('checked_values', 0)}"
                        f"{' · approved query used' if a.get('fallback') else ''}"
                        f"{' · landed cost hidden by the masking policy' if run.get('cost_masked') else ''}")
+    if a.get("error"):
+        with st.expander("Technical details"):
+            st.code(a["error"][:4000])
     if a.get("audit_error"):
         st.error("The answer ran, but its audit record could not be written. Treat this response as incomplete.")
+
+
+FREE_FORM = [
+    "Supplier on-time delivery for CP-1019 in March 2026",
+    "Customer on-time delivery for MM-401 in January 2026",
+    "What was inbound OTD at Reno in February 2026?",
+    "Unit fill rate by region for March 2026",
+    "Show customer OTD trend for MM-440",
+    "Which suppliers deliver late most often?",
+]
 
 
 def page_ask():
@@ -1014,15 +1351,21 @@ def page_ask():
     )
     analyst_mode = engine == "Governed semantic answer"
     if analyst_mode:
-        suggestions = list(D["questions"].QUESTION) + ["What was OTD last May?", "What is our OTIF for May 2026?"]
+        groups = [
+            ("Free-form: Cortex Analyst writes the query", FREE_FORM),
+            ("Approved questions: the data team wrote the query in advance", list(D["questions"].QUESTION)),
+            ("Words Concordia clarifies or refuses", ["What was OTD last May?", "What is our OTIF for May 2026?"]),
+        ]
     else:
         envelope = D["questions"][D["questions"].METRIC_ID.notna()]
-        suggestions = list(envelope.QUESTION) + ["What was OTD last month?", "What is our OTIF for May 2026?"]
+        groups = [("Single-metric evidence questions", list(envelope.QUESTION)),
+                  ("Words Concordia clarifies or refuses", ["What was OTD last month?", "What is our OTIF for May 2026?"])]
     with st.expander("Questions to try", expanded=not st.session_state.chat):
-        grid = st.columns(3)
-        for i, text in enumerate(suggestions):
-            if grid[i % 3].button(text, key=f"vq{int(analyst_mode)}_{i}", use_container_width=True):
-                st.session_state.pending = text
+        for g, (title, texts) in enumerate(groups):
+            st.markdown(f'<div class="sub" style="margin:6px 0 4px 0"><b>{esc(title)}</b></div>', unsafe_allow_html=True)
+            grid = st.columns(3)
+            for i, text in enumerate(texts):
+                grid[i % 3].button(text, key=f"vq{int(analyst_mode)}_{g}_{i}", use_container_width=True, on_click=ask_again, args=(text,))
     asked = st.chat_input("Ask about supplier on-time delivery, customer on-time delivery, fill rate, days of inventory or landed cost…")
     question = asked or st.session_state.pop("pending", None)
     if question:
@@ -1032,7 +1375,8 @@ def page_ask():
                 try:
                     entry["analyst"] = analyst_answer(question, persona)
                 except Exception as exc:  # noqa: BLE001 - surface service errors instead of failing the page
-                    entry["analyst"] = {"text": f"Cortex Analyst is not available right now: {exc}", "run": None}
+                    entry["analyst"] = {"text": "Cortex Analyst could not answer just now. Ask again, or pick an approved question "
+                                                "from the list above.", "run": None, "error": str(exc)}
                 else:
                     try:
                         audit_semantic(persona, question, entry["analyst"])
@@ -1043,8 +1387,13 @@ def page_ask():
                 raw = session().sql("CALL CONCORDIA.APP.ASK(?, ?)", params=[persona, question]).collect()[0][0]
             entry["result"] = json.loads(raw)
         st.session_state.chat.insert(0, entry)
+    if st.session_state.chat:
+        st.button("Clear answers", key="clear_chat", on_click=lambda: st.session_state.update(chat=[]))
     for entry in st.session_state.chat:
-        render_analyst(entry) if "analyst" in entry else render_answer(entry)
+        if "analyst" in entry:
+            render_analyst(entry)
+        else:
+            render_answer(entry)
         st.write("")
 
 
@@ -1060,27 +1409,41 @@ def page_bridge():
     metric = c1.selectbox("Measure", options, index=options.index(default_metric(results(persona, item), options)),
                           format_func=lambda m: METRICS[m]["short"],
                           help="Customer on-time is about deliveries to customers; supplier on-time is about deliveries to us.")
-    month = month_picker(c2, "bridge_month", MONTHS[1:])
+    flow = [m for m in FLOW_MONTHS if m in MONTHS]
+    month = month_picker(c2, "bridge_month", flow[1:] or MONTHS[1:])
     geo = None
     if metric != "INBOUND_SUPPLIER_OTD":
         geo_options = [None] + list(D["geos"].GEOGRAPHY_ID)
         lead_geo = question_scope(metric, "PRIOR_PERIOD").get("geography_id") if item == LEAD_SCOPE.get("item_id") else None
+        by_region = breakdown(persona, metric, str(month), "final", "GEOGRAPHY", item)
+        active = set(by_region.DIM_VALUE) if not by_region.empty else set()
+
+        def region_label(g):
+            if g is None:
+                return "All regions"
+            return GEO_NAMES.get(g, g) + ("" if g in active else f" · no orders in {month_label(month)}")
+
         geo = c3.selectbox("Customer region", geo_options, index=geo_options.index(lead_geo) if lead_geo in geo_options else 0,
-                           format_func=lambda g: "All regions" if g is None else GEO_NAMES.get(g, g),
-                           help="Where the customer is. Supplier deliveries have no customer region.")
-    prior = MONTHS[MONTHS.index(month) - 1]
+                           format_func=region_label,
+                           help="Where the customer is. Regions marked 'no orders' had no customer order lines due that month "
+                                "for this part, so there is nothing to score there.")
+    choices = flow or MONTHS
+    prior = choices[choices.index(month) - 1] if month in choices and choices.index(month) > 0 else MONTHS[MONTHS.index(month) - 1]
     data = results(persona, item, None, geo)
     scoped = data[(data.RECENCY == 1) & (data.AS_OF_KIND == "final")]
     now = pick(scoped[in_month(scoped.PERIOD_START, month)], METRIC_ID=metric)
     before = pick(scoped[in_month(scoped.PERIOD_START, prior)], METRIC_ID=metric)
+    now_gap = gap(metric, data, "final", month) if now is None else None
+    before_gap = gap(metric, data, "final", prior) if before is None else None
     st.markdown(f'<div class="section">{esc(item_label(item))}{" · " + esc(GEO_NAMES.get(geo, "")) if geo else ""}</div>', unsafe_allow_html=True)
     a, b, c = st.columns([1, 1, 2])
-    a.markdown(card(metric, before, title=f"{METRICS[metric]['short']} · {month_label(prior)}"), unsafe_allow_html=True)
-    b.markdown(card(metric, now, title=f"{METRICS[metric]['short']} · {month_label(month)}"), unsafe_allow_html=True)
+    a.markdown(card(metric, before, title=f"{METRICS[metric]['short']} · {month_label(prior)}", info=before_gap), unsafe_allow_html=True)
+    b.markdown(card(metric, now, title=f"{METRICS[metric]['short']} · {month_label(month)}", info=now_gap), unsafe_allow_html=True)
+    jump_buttons(b, now_gap, "bridge_now")
     lines = q("SELECT * FROM TABLE(CONCORDIA.APP.CONTRIBUTION_FOR(?, ?, ?::DATE, ?::DATE, ?::VARCHAR, ?::VARCHAR)) LIMIT 5000",
               [persona, metric, str(prior), str(month), item, geo])
     if lines.empty:
-        c.info(METRICS[metric]["empty"])
+        c.info((now_gap or before_gap or {}).get("why") or METRICS[metric]["empty"])
         return
     lines["Month"] = lines.PERIOD_START.map(month_label)
     drivers = lines[lines.OUTCOME.isin(["MISS", "EXCLUDED"])].copy()
@@ -1093,7 +1456,8 @@ def page_bridge():
         c.success("No misses or exclusions in either month.")
     else:
         chart = (alt.Chart(counts).mark_bar(cornerRadiusEnd=3)
-                 .encode(y=alt.Y("Cause:N", title=None, sort="-x"), x=alt.X("Lines:Q", title="Order lines"),
+                 .encode(y=alt.Y("Cause:N", title=None, sort="-x", axis=alt.Axis(labelLimit=260)),
+                         x=alt.X("Lines:Q", title="Order lines", axis=alt.Axis(format="d", tickMinStep=1)),
                          color=alt.Color("Month:N", scale=alt.Scale(range=["#9FB3C8", BLUE]), legend=alt.Legend(orient="top")),
                          yOffset="Month:N", tooltip=["Month", "Cause", "Lines"])
                  .properties(height=max(180, 46 * counts.Cause.nunique())))
@@ -1101,6 +1465,10 @@ def page_bridge():
     section("The actual order lines", f"Every line counted in {month_label(month)}. On time and complete, missed, or left out, "
             "with the cause and the dates.")
     view = lines[in_month(lines.PERIOD_START, month)].copy()
+    if view.empty:
+        st.info(f"No order lines were due in {month_label(month)} for this selection. The lines for {month_label(prior)} are "
+                "counted in the left card.")
+        return
     view["Result"] = view.OUTCOME.map(plain_driver)
     view["Cause"] = view.DRIVER.map(plain_driver)
     view["Why left out"] = view.REASONS.map(lambda r: ", ".join(plain_reason(x) for x in as_list(r)) or "—")
@@ -1108,11 +1476,12 @@ def page_bridge():
     view["Region"] = view.GEOGRAPHY_ID.map(lambda g: GEO_NAMES.get(g, g) if isinstance(g, str) else "—")
     view["Customer / supplier"] = [PARTY_NAMES.get(cu if isinstance(cu, str) else su, cu if isinstance(cu, str) else su)
                                    for cu, su in zip(view.CUSTOMER_ID, view.SUPPLIER_ID)]
-    st.dataframe(view[["LINE_ID", "ITEM_ID", "Site", "Region", "Customer / supplier", "Result", "Cause", "COMMITMENT_ON", "COMPLETED_ON",
-                       "QTY", "Why left out"]]
-                 .rename(columns={"LINE_ID": "Order line", "ITEM_ID": "Part", "COMMITMENT_ON": "Promised for", "COMPLETED_ON": "Completed on",
-                                  "QTY": "Quantity"})
-                 .sort_values(["Result", "Order line"]), hide_index=True, use_container_width=True, height=320)
+    view["COMPLETED_ON"] = view.COMPLETED_ON.map(lambda v: "Not yet" if blank(v) else v)
+    show(st, view[["LINE_ID", "ITEM_ID", "Site", "Region", "Customer / supplier", "Result", "Cause", "COMMITMENT_ON", "COMPLETED_ON",
+                   "QTY", "Why left out"]]
+         .rename(columns={"LINE_ID": "Order line", "ITEM_ID": "Part", "COMMITMENT_ON": "Promised for", "COMPLETED_ON": "Completed on",
+                          "QTY": "Quantity"})
+         .sort_values(["Result", "Order line"]), height=320)
 
 
 def page_asof():
@@ -1158,10 +1527,9 @@ def page_asof():
         else:
             rec["Missing"] = rec.GAPS.map(lambda g: ", ".join(plain_reason(x) for x in as_list(g)) or "—")
             rec["Bills complete"] = rec.COVERED.map(lambda v: "Yes" if v else "No")
-            c.dataframe(rec[["Known", "RECEIPT_ID", "ACCEPTED_QTY", "Bills complete", "Missing", "LANDED_USD", "FREIGHT_USD"]]
-                        .rename(columns={"RECEIPT_ID": "Receipt", "ACCEPTED_QTY": "Units accepted", "LANDED_USD": "Landed cost (USD)",
-                                         "FREIGHT_USD": "Freight share (USD)"}),
-                        hide_index=True, use_container_width=True, height=260)
+            show(c, rec[["Known", "RECEIPT_ID", "ACCEPTED_QTY", "Bills complete", "Missing", "LANDED_USD", "FREIGHT_USD"]]
+                 .rename(columns={"RECEIPT_ID": "Receipt", "ACCEPTED_QTY": "Units accepted", "LANDED_USD": "Landed cost (USD)",
+                                  "FREIGHT_USD": "Freight share (USD)"}), height=260)
             if bool(rec.MASKED.any()):
                 c.caption("Cost columns are hidden for your role by the database (APP.RECEIPTS_FOR).")
 
@@ -1189,12 +1557,12 @@ def page_asof():
                                  for s, d in zip(changed.STATUS_BEFORE, changed.DISPLAY_BEFORE)]
             changed["After"] = [f"{STATUS_LABEL.get(s, s)} {d}" if isinstance(d, str) else STATUS_LABEL.get(s, s)
                                 for s, d in zip(changed.STATUS, changed.DISPLAY)]
-            st.dataframe(changed[["Measure", "Month", "Known", "Before", "After"]], hide_index=True, use_container_width=True, height=300)
+            show(st, changed[["Measure", "Month", "Known", "Before", "After"]], height=300)
     section("Data loads", "Every load, matching and publishing step, with when it ran and how many rows it handled.")
     pipeline = table("V_PIPELINE", "ORDER BY STARTED_AT DESC", limit=30)
-    st.dataframe(pipeline[["STARTED_AT", "STEP", "STATUS", "ROWS_IN", "ROWS_OUT"]]
-                 .rename(columns={"STARTED_AT": "Started", "STEP": "Step", "STATUS": "Status", "ROWS_IN": "Rows in", "ROWS_OUT": "Rows out"}),
-                 hide_index=True, use_container_width=True, height=260)
+    show(st, pipeline[["STARTED_AT", "STEP", "STATUS", "ROWS_IN", "ROWS_OUT"]]
+         .rename(columns={"STARTED_AT": "Started", "STEP": "Step", "STATUS": "Status", "ROWS_IN": "Rows in", "ROWS_OUT": "Rows out"}),
+         height=260)
 
 
 EDGE_PLAIN = {
@@ -1203,7 +1571,33 @@ EDGE_PLAIN = {
     "DELIVERED_TO": "delivered to", "PROMISES": "promises", "COST_OF": "cost of", "RETURNED_AGAINST": "returned against",
     "FEEDBACK_ON": "feedback on", "SAME_AS": "same as", "CONSUMES": "consumes", "SUBSTITUTES_FOR": "substitutes for",
     "PARENT_OF": "parent of", "BELONGS_TO_FAMILY": "belongs to family", "IN_COUNTRY": "in country",
-    "IN_REGION": "in region", "CONTAINS": "contains lot", "SENSES": "senses",
+    "IN_REGION": "in region", "CONTAINS": "contains lot", "SENSES": "senses", "ALLOCATED_TO": "allocated to",
+}
+EDGE_HELP = {
+    "SUPPLIES": "This supplier sells us the part.",
+    "COMPONENT_OF": "This part is built into the other one (bill of materials).",
+    "CAPABLE_OF_PRODUCING": "This factory is set up to make the part.",
+    "RECEIVED_FROM": "Goods were received from this supplier.",
+    "HELD_AT": "Stock of the part sits at this site.",
+    "FULFILLS": "This shipment or receipt fulfils the order.",
+    "EXECUTED_AT": "The work happened at this site.",
+    "PRODUCES": "This production run made the part.",
+    "PLACED": "This customer placed the order.",
+    "DELIVERED_TO": "The goods went to this customer location.",
+    "PROMISES": "The promise date given to the customer for this order.",
+    "COST_OF": "A bill (invoice, freight, duty) that belongs to this receipt.",
+    "RETURNED_AGAINST": "A customer return booked against this order.",
+    "FEEDBACK_ON": "A customer rating or complaint about this order.",
+    "SAME_AS": "Two codes from different systems that are the same part, company or site.",
+    "CONSUMES": "Making the parent uses up this component.",
+    "SUBSTITUTES_FOR": "An approved replacement part.",
+    "PARENT_OF": "The parent in the product structure.",
+    "BELONGS_TO_FAMILY": "The product family the part belongs to.",
+    "IN_COUNTRY": "The country the site or company is in.",
+    "IN_REGION": "The customer region.",
+    "CONTAINS": "A physical lot (batch) carried by this receipt or shipment.",
+    "SENSES": "A dock sensor reading that recorded this lot.",
+    "ALLOCATED_TO": "This lot was assigned to a customer shipment.",
 }
 
 
@@ -1245,10 +1639,23 @@ def page_graph():
         with g2:
             section("What each system calls it", "The code each source system uses for this part, and how Concordia matched it. "
                     "Exact key = same code; GTIN = matched on the barcode number; administered = mapped by the data team.")
-        g2.dataframe(aliases[["SOURCE_SYSTEM", "SOURCE_KEY", "METHOD"]]
-                     .rename(columns={"SOURCE_SYSTEM": "System", "SOURCE_KEY": "Their code", "METHOD": "How matched"}),
-                     hide_index=True, use_container_width=True, height=240)
+        show(g2, aliases[["SOURCE_SYSTEM", "SOURCE_KEY", "METHOD"]]
+             .rename(columns={"SOURCE_SYSTEM": "System", "SOURCE_KEY": "Their code", "METHOD": "How matched"}), height=240)
+        codes = ", ".join(f"<code>{esc(k)}</code> in {esc(s)}" for s, k in zip(aliases.SOURCE_SYSTEM, aliases.SOURCE_KEY)) or "its own code"
+        g2.markdown(
+            f'<div class="explain"><div class="k">What "same as" means</div>'
+            f'Each system names the same physical part differently: {codes}. A <b>SAME_AS</b> link says '
+            f'"these codes are one part, <b>{esc(item)}</b>". Without it, an order from one system and a receipt from another '
+            f'would look like two unrelated parts, and the numbers would not add up. With it, every system\'s records count toward '
+            f'one part, so every team gets the same answer.</div>', unsafe_allow_html=True)
         g2.caption(f"{len(edges)} connections touch this part{'; showing 28' if len(edges) > 28 else ''}.")
+        present_types = sorted(set(shown.EDGE_TYPE)) if not shown.empty else []
+        if present_types:
+            g1.markdown(" ".join(f'<span class="chip" title="{esc(EDGE_HELP.get(t, ""))}">{esc(EDGE_PLAIN.get(t, t.lower()))}</span>'
+                                 for t in present_types), unsafe_allow_html=True)
+            with g1.expander("What each arrow means"):
+                show(st, pd.DataFrame([{"Arrow": EDGE_PLAIN.get(t, t.lower()), "Meaning": EDGE_HELP.get(t, "A recorded relationship.")}
+                                       for t in present_types]))
 
     section("Data the measures refuse to hide", "Records Concordia could not trust are set aside rather than silently fixed, and "
             "you can see them here.")
@@ -1266,10 +1673,9 @@ def page_graph():
     if resolution.empty:
         q2.info("None open.")
     else:
-        q2.dataframe(resolution[["SOURCE_SYSTEM", "SOURCE_KEY", "CANDIDATE_ID", "METHOD", "SCORE", "STATUS"]].head(200)
-                     .rename(columns={"SOURCE_SYSTEM": "System", "SOURCE_KEY": "Their code", "CANDIDATE_ID": "Possible match",
-                                      "METHOD": "How", "SCORE": "Score", "STATUS": "Status"}),
-                     hide_index=True, use_container_width=True, height=260)
+        show(q2, resolution[["SOURCE_SYSTEM", "SOURCE_KEY", "CANDIDATE_ID", "METHOD", "SCORE", "STATUS"]].head(200)
+             .rename(columns={"SOURCE_SYSTEM": "System", "SOURCE_KEY": "Their code", "CANDIDATE_ID": "Possible match",
+                              "METHOD": "How", "SCORE": "Score", "STATUS": "Status"}), height=260)
     sources = table("V_SOURCE_COUNTS", "ORDER BY SOURCE_SYSTEM, SOURCE_OBJECT", limit=200)
     q3.markdown("**Records received from each system**")
     by_system = sources.groupby("SOURCE_SYSTEM").RECORDS.sum().reset_index()
@@ -1298,11 +1704,11 @@ def page_governance():
                             f"**Calculated by.** `{r.RESULT_FUNCTION}` · **Fingerprint.** `{r.DEFINITION_HASH}`")
     with tabs[1]:
         st.caption("Words that mean different things to different teams. Concordia asks which one you mean, or says it has no agreed definition.")
-        st.dataframe(table("V_REJECTED_ALIAS"), hide_index=True, use_container_width=True)
+        show(st, table("V_REJECTED_ALIAS"))
     with tabs[2]:
         who = roster.assign(Sites=roster.ALLOWED_FACILITIES.map(site_list)).drop(columns=["ALLOWED_FACILITIES"])
-        st.dataframe(who.rename(columns={"PERSONA": "Role", "DISPLAY_NAME": "Name", "TITLE": "Title", "COST_VISIBLE": "Sees cost",
-                                         "AUDIT_VISIBLE": "Sees everyone's questions"}), hide_index=True, use_container_width=True)
+        show(st, who.rename(columns={"PERSONA": "Role", "DISPLAY_NAME": "Name", "TITLE": "Title", "COST_VISIBLE": "Sees cost",
+                                     "AUDIT_VISIBLE": "Sees everyone's questions"}))
         st.caption("Rules are enforced in the database: a masking policy hides cost and a row access policy hides other sites' rows "
                    "on the semantic view, and APP.RESULTS_FOR, APP.BREAKDOWN_FOR, APP.CONTRIBUTION_FOR, APP.RECEIPTS_FOR and "
                    "APP.ASK_METRIC apply the same rules. Roles are picked in this demo; each one is also a real Snowflake role.")
@@ -1316,24 +1722,24 @@ def page_governance():
             st.caption("Each Snowflake persona role read APP.SV_RESULT itself. On the answers every role may see (network, part, "
                        "region and Americas-site answers), the fingerprint of every published value must equal the planner's. "
                        "Other-site answers are the rows outside Americas; logistics must see none.")
-            st.dataframe(checked[["PERSONA", "SNOWFLAKE_ROLE", "METRIC_ID", "ROWS_VISIBLE", "VALUES_VISIBLE", "OTHER_SITE_ROWS",
-                                  "MATCHES_PLANNER"]]
-                         .assign(METRIC_ID=checked.METRIC_ID.map(lambda m: METRICS.get(m, {}).get("short", m)))
-                         .rename(columns={"PERSONA": "Persona", "SNOWFLAKE_ROLE": "Snowflake role", "METRIC_ID": "Measure",
-                                          "ROWS_VISIBLE": "Shared answers read", "VALUES_VISIBLE": "Values not masked",
-                                          "OTHER_SITE_ROWS": "Other-site answers", "MATCHES_PLANNER": "Same as planner"}),
-                         hide_index=True, use_container_width=True)
+            show(st, checked[["PERSONA", "SNOWFLAKE_ROLE", "METRIC_ID", "ROWS_VISIBLE", "VALUES_VISIBLE", "OTHER_SITE_ROWS",
+                              "MATCHES_PLANNER"]]
+                 .assign(METRIC_ID=checked.METRIC_ID.map(lambda m: METRICS.get(m, {}).get("short", m)))
+                 .rename(columns={"PERSONA": "Persona", "SNOWFLAKE_ROLE": "Snowflake role", "METRIC_ID": "Measure",
+                                  "ROWS_VISIBLE": "Shared answers read", "VALUES_VISIBLE": "Values not masked",
+                                  "OTHER_SITE_ROWS": "Other-site answers", "MATCHES_PLANNER": "Same as planner"}))
     with tabs[3]:
         audit = q("SELECT * FROM TABLE(CONCORDIA.APP.AUDIT_FOR(?)) ORDER BY CREATED_AT DESC LIMIT 300", [persona])
-        st.dataframe(audit, hide_index=True, use_container_width=True, height=360)
+        show(st, audit, height=360)
     with tabs[4]:
         evidence = q("SELECT EVIDENCE_ID, CREATED_AT, PERSONA, QUESTION, METRIC_ID, STATUS, AS_OF, EVIDENCE_HASH FROM "
                      "TABLE(CONCORDIA.APP.EVIDENCE_FOR(?)) ORDER BY CREATED_AT DESC LIMIT 300", [persona])
-        st.dataframe(evidence, hide_index=True, use_container_width=True, height=360)
+        show(st, evidence, height=360)
     with tabs[5]:
         st.caption("Field by field: which source field feeds which business field, the rule applied, and what happens if it cannot be mapped.")
-        st.dataframe(table("V_SOURCE_MAPPING"), hide_index=True, use_container_width=True, height=360)
+        show(st, table("V_SOURCE_MAPPING"), height=360)
 
 
-{"Start here": page_start, "Command center": page_command_center, "Ask Concordia": page_ask, "Why it changed": page_bridge,
- "As-of replay": page_asof, "One graph": page_graph, "Governance": page_governance}[page]()
+PAGE_VIEWS = {"Start here": page_start, "Command center": page_command_center, "Ask Concordia": page_ask, "Why it changed": page_bridge,
+              "As-of replay": page_asof, "One graph": page_graph, "Governance": page_governance}
+PAGE_VIEWS[page]()

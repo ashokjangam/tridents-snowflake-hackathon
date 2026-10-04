@@ -20,9 +20,9 @@
         "status": "COMPLETE",
         "display": "0.2500",
         "narration_source": "MODEL",
-        "narration": "Outbound customer OTD for MM-440 changed in May 2026 because the percentage of on-time deliveries decreased from 100.00% to 25.00%. This change is based on synthetic data. The status is COMPLETE, indicating that the data is final and verified.",
+        "narration": "The data is synthetic. Outbound customer OTD for MM-440 changed in May 2026 because the percentage of on-time deliveries decreased from 100.00% to 25.00%. This change is based on a sample of 4 orders in May 2026, compared to 3 orders in April 2026.",
         "note": null,
-        "seconds": 11.6
+        "seconds": 19.2
       },
       {
         "question": "Compare landed cost for MM-440 at Dayton in May 2026 between 5 June and 15 July",
@@ -32,7 +32,7 @@
         "narration_source": "TEMPLATE",
         "narration": "Landed cost per accepted unit for 2026-05-01 to 2026-05-31 is 12.5000 (237500 / 190.000000), as of 2026-07-15T23:59:59Z. As of 2026-06-05T23:59:59Z it was INCOMPLETE. Synthetic data.",
         "note": "rejected model numbers ['12.50']",
-        "seconds": 16.4
+        "seconds": 17.2
       },
       {
         "question": "How did inbound supplier on-time delivery look at Stuttgart in March 2026?",
@@ -42,7 +42,7 @@
         "narration_source": "MODEL",
         "narration": "Inbound supplier on-time delivery at Stuttgart in March 2026 was 50.65%. This data is synthetic. The status is complete, indicating that the data is final and no further updates are expected.",
         "note": null,
-        "seconds": 9.8
+        "seconds": 11.6
       }
     ],
     "passed": true

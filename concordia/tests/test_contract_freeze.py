@@ -98,6 +98,15 @@ def test_semantic_runner_and_verified_question_regressions():
     assert 'verdict in ("VERIFIED", "DESCRIPTIVE", "UNPINNED")' not in rendered
 
     runner_body = runner.split("def run(session", 1)[1]
+    lookup = (
+        "COALESCE(CURRENT_SESSION(), CURRENT_USER(), "
+        "IFF(IS_ROLE_IN_SESSION('CONCORDIA_APP_OWNER'), 'CONCORDIA_APP_OWNER', NULL))"
+    )
+    assert "COALESCE(CURRENT_SESSION(), CURRENT_USER()," in runner_body
+    assert "IFF(IS_ROLE_IN_SESSION('CONCORDIA_APP_OWNER'), 'CONCORDIA_APP_OWNER', NULL)" in runner_body
+    assert "SELECT CURRENT_SESSION() AS SESSION_ID" not in runner_body
+    assert "No session identity is available for this persona." not in runner_body
+    assert semantic_sql.count(f"c.SESSION_ID = {lookup}") == 4
     assert '"verdict": "WITHHELD"' in runner_body
     assert runner_body.index('"verdict": "WITHHELD"') < runner_body.index("prove(session, cleaned, columns, rows)")
 

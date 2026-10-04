@@ -237,7 +237,7 @@
       <rect x="700" y="20" width="185" height="220" rx="12" fill="#fff" stroke="#D4DEE8"/>
       <rect x="700" y="20" width="185" height="36" rx="12" fill="#0E9F9A"/><text x="792" y="44" text-anchor="middle" fill="#fff" font-weight="700">APP</text>
       <text x="718" y="84" font-size="13">Published grid</text><text x="718" y="104" font-size="11.5" fill="#516D83">19 "known when" points</text>
-      <text x="718" y="132" font-size="13">Persona functions</text><text x="718" y="152" font-size="11.5" fill="#516D83">masking applied in SQL</text>
+      <text x="718" y="132" font-size="13">Persona controls</text><text x="718" y="152" font-size="11.5" fill="#516D83">masking and site row access</text>
       <text x="718" y="180" font-size="13">Semantic ontology</text><text x="718" y="200" font-size="11.5" fill="#516D83">23 verified questions + guard</text>
     </g>
     <g>
@@ -307,11 +307,11 @@
     <tr><th>You see</th><th>It means</th></tr>
     <tr><td><span class="st s-ok">COMPLETE</span></td><td>Every input the contract needs was present. The number is final for that "known when" date.</td></tr>
     <tr><td><span class="st s-inc">INCOMPLETE</span></td><td>Some inputs are missing (for example a freight bill, or lines excluded for bad data). For landed cost the headline is withheld. For counts, the value is shown but flagged.</td></tr>
-    <tr><td><span class="st s-no">FORBIDDEN</span></td><td>The requested scope is outside the persona entitlement (for example Logistics asking for Stuttgart). No row is returned.</td></tr>
-    <tr><td><span class="st s-no">WITHHELD</span></td><td>The semantic row exists, but a Snowflake masking policy hides its value (for example landed cost for Planning or Logistics). It is never labelled COMPLETE with a blank.</td></tr>
+    <tr><td><span class="st s-no">FORBIDDEN</span></td><td>The dashboard card says <b>Hidden for your role</b>. This covers cost for Planning and Logistics, and a site outside the persona's entitlement, such as Logistics asking for Stuttgart.</td></tr>
+    <tr><td><span class="st s-no">WITHHELD</span></td><td>On a semantic answer, the row exists but Snowflake hides the landed-cost value. The screen also says <b>Hidden for your role</b>. It is never labelled COMPLETE with a blank.</td></tr>
     <tr><td><span class="st s-cl">CLARIFY</span></td><td>The question was ambiguous. Concordia asks which governed metric you meant instead of picking one.</td></tr>
     <tr><td><span class="st s-no">REJECT</span></td><td>The term maps to no governed metric (for example OTIF). Concordia says so instead of approximating.</td></tr>
-    <tr><td><span class="st s-grey">ZERO_DENOMINATOR</span> / <span class="st s-grey">ZERO_DEMAND</span></td><td>Nothing to measure in that scope (no lines due, no demand). Not the same as 0%.</td></tr>
+    <tr><td><span class="st s-grey">ZERO_DENOMINATOR</span> / <span class="st s-grey">ZERO_DEMAND</span></td><td>Nothing due in that scope (no lines due, no demand). Not the same as 0%. When no row exists at all, the card names why: <b>No customer deliveries due</b> for a quiet month (with buttons to the nearest months that have data), or <b>Does not apply here</b> when the measure never applies to that part (for example customer delivery for a bought component).</td></tr>
     <tr><td><code>2 / 3</code></td><td>Numerator over denominator: on-time lines over lines due.</td></tr>
     <tr><td><code>coverage 1.000000</code></td><td>Share of the scope whose inputs were complete. 1 = all of it, 0 = none.</td></tr>
     <tr><td><code>1 affected</code></td><td>How many commitments missed or were excluded. These are what the evidence lists.</td></tr>
@@ -330,7 +330,7 @@
   <div class="page-head" id="sidebar"><h3>6.1 Sidebar</h3><span class="pill">on every page</span></div>
   <div class="widget"><div class="wt">Viewing as</div>
     <dl><dt>Shows</dt><dd>Which of the five demo personas you are. Changing it changes what the SQL lets you see. The box below says whether cost and audit are visible.</dd>
-    <dt>Look for</dt><dd>Switch from Nora Hale (VP) to Priya Shah (Supply Planner): the landed cost card changes to "Not shown" with status FORBIDDEN.</dd></dl></div>
+    <dt>Look for</dt><dd>Switch from Nora Hale (VP) to Priya Shah (Supply Planner): the landed cost card changes to "Hidden for your role" with status FORBIDDEN.</dd></dl></div>
   <div class="widget"><div class="wt">Navigation</div><dl><dt>Shows</dt><dd>The seven pages described below.</dd></dl></div>
   <div class="widget"><div class="wt">Published … · source records · governed results</div>
     <dl><dt>Shows</dt><dd>When the latest publish run finished, how many raw records it used (126,073) and how many answers it published (43,948).</dd>
@@ -413,7 +413,7 @@
     <tr><th>Persona</th><th>Name and title</th><th>Sees cost</th><th>Site detail</th><th>Sees full audit</th></tr>
     <tr><td>EXECUTIVE</td><td>Nora Hale, VP Supply Chain</td><td>Yes</td><td>All six sites</td><td>Own questions only</td></tr>
     <tr><td>PROCUREMENT</td><td>Marcus Webb, Procurement Manager</td><td>Yes</td><td>All six sites</td><td>Own questions only</td></tr>
-    <tr><td>LOGISTICS</td><td>Elena Voss, Logistics Manager</td><td>No</td><td>Dayton, Reno, Newark, Oakland</td><td>Own questions only</td></tr>
+    <tr><td>LOGISTICS</td><td>Elena Voss, Logistics Manager, Americas</td><td>No</td><td>Dayton, Reno, Newark, Oakland</td><td>Own questions only</td></tr>
     <tr><td>PLANNER</td><td>Priya Shah, Supply Planner</td><td>No</td><td>All six sites</td><td>Own questions only</td></tr>
     <tr><td>AUDITOR</td><td>Jordan Ellis, Data Steward / Auditor</td><td>Yes</td><td>All six sites</td><td>Yes</td></tr>
   </table>
@@ -436,7 +436,7 @@
   <p>The same semantic view can traverse purchase orders → receipts → cost documents and received lots, and sales orders → promises or shipments → allocated lots. Customer-order rows also expose ship-to location, returns, ratings and complaint counts without creating a second ambiguous join path. Source-system material numbers connect to canonical parts through <code>SAME_AS</code> identity aliases.</p>
   <h3>Questions to try</h3>
   <ul>
-    <li>Compare outbound customer on-time delivery, unit fill rate, and days of inventory for MM-440 at Dayton in May 2026, final.</li>
+    <li>Compare supplier on-time delivery, customer on-time delivery and unit fill rate for MM-440 in May 2026.</li>
     <li>Show the product-level supplier, component, home plant, customer and region paths for motor MM-401.</li>
     <li>Show IoT dock events and lots for MM-440 at Dayton.</li>
     <li>Why did outbound customer OTD for MM-440 change in May 2026? <span class="small">evidence mode</span></li>
@@ -482,7 +482,8 @@
     <tr><td>Full pytest</td><td>Python reference metrics, static contracts and opted-in SQL against the deployed account</td><td class="num">28 passed</td></tr>
     <tr><td>Persona proof</td><td>The same OTD question as Planning, Procurement and Logistics, plus role-level semantic hashes</td><td class="num">passed</td></tr>
     <tr><td>Ontology proof</td><td>All 23 verified questions, IoT/lots, operational orders and costs, line causes, ALLOCATED_TO, ship-to/feedback, identity aliases and all-motor inventory publishing</td><td class="num">passed</td></tr>
-    <tr><td>App smoke</td><td>All seven pages executed across parts and personas against the live account</td><td class="num">no errors</td></tr>
+    <tr><td>Ask</td><td>Three live questions through the evidence route, including the MM-440 May change and the restated landed cost</td><td class="num">passed</td></tr>
+    <tr><td>App smoke</td><td>Manual local run of all seven pages for Executive and Logistics against the live account. The deployed Streamlit frame was not visually inspected.</td><td class="num">no errors</td></tr>
   </table>
   <p class="small">Run them again with <code>python scripts/verify.py golden grid hero security ask personas ontology</code>. Results are written to <code>data/generated/verification.json</code>.</p>
 </section>
@@ -491,12 +492,12 @@
 <section id="demo">
   <h2>12 · Five-minute demo script</h2>
   <ol class="steps">
-    <li><b>Command center, as Nora Hale.</b> "Same part, same month, five teams, one card each." Point at 2/3, 1/4, 40/40 and the coverage line. Show the May dip on the trend.</li>
+    <li><b>Command center, as Nora Hale.</b> Five metric cards for the same part and month, then the three-team check for Planning, Procurement and Logistics. Point at 2/3, 1/4, 40/40 and the coverage line. Show the May dip on the trend.</li>
     <li><b>Flip Known as of to Early.</b> Landed cost becomes INCOMPLETE with the missing freight reasons. "We don't show a number we can't stand behind."</li>
     <li><b>Ask Concordia.</b> Click the "why did outbound OTD change" question. Show the narration, the comparison card and the evidence envelope. Then click the two probes: OTD → clarify, OTIF → reject.</li>
     <li><b>Why it changed.</b> April 100% vs May 25%, the drivers, and the actual late lines.</li>
     <li><b>As-of replay.</b> INCOMPLETE → $12.50 with the receipts, then the restated June numbers after batch 2.</li>
-    <li><b>Switch to Priya Shah.</b> Landed cost is now "Not shown / FORBIDDEN". "Masking lives in SQL, not in the app."</li>
+    <li><b>Switch to Priya Shah.</b> Landed cost is now "Hidden for your role" with status FORBIDDEN. "The database hides it, not the page."</li>
     <li><b>Governance.</b> Open one contract: definition, owner, SQL function, hash. Close with "the model words it, the contract calculates it".</li>
   </ol>
 </section>
@@ -529,7 +530,7 @@
     <tr><td>App loads slowly the first time</td><td>Warehouse resuming, packages installing</td><td>Wait 20 seconds and reload.</td></tr>
     <tr><td>Ask takes 10–20 seconds</td><td>Cortex routing and narration calls</td><td>Expected. Verified questions skip the routing call.</td></tr>
     <tr><td>A card says "No published row for this scope"</td><td>That part + scope combination isn't in the governed grid (for example part + supplier)</td><td>Use a published scope. Concordia intentionally does not calculate an ungoverned arbitrary cut.</td></tr>
-    <tr><td>Landed cost shows "Not shown"</td><td>Your persona can't see cost</td><td>Switch to Nora, Marcus or Jordan.</td></tr>
+    <tr><td>Landed cost says "Hidden for your role"</td><td>Your persona can't see cost. The dashboard status is FORBIDDEN; a semantic answer says WITHHELD.</td><td>Switch to Nora, Marcus or Jordan.</td></tr>
     <tr><td>Network landed cost is always INCOMPLETE</td><td>By contract: some cost document is missing in every month</td><td>Choose a part and facility.</td></tr>
   </table>
 </section>
@@ -538,7 +539,7 @@
 <section id="runbook">
   <h2>15 · Runbook and file map</h2>
 <pre>python scripts/generate_world.py                    # build the synthetic world (NumPy 2.2.6 required)
-python scripts/deploy.py                            # create everything, load batch 1, publish, deploy app
+python scripts/deploy.py                            # full order: land batch 1, publish, personas, semantic view, app, then batch 2
 python scripts/deploy.py reset upload load1 resolve eval publish   # reload a regenerated world
 python scripts/deploy.py streamlit                  # redeploy only the app
 python scripts/verify.py golden grid hero security ask personas ontology
@@ -555,6 +556,7 @@ streamlit run streamlit/app.py                      # same app locally, against 
     <tr><td><code>sql/06_semantic.sql</code></td><td>Semantic view <code>APP.SUPPLY_CHAIN_ONTOLOGY</code>, verified queries, masking and guarded execution</td></tr>
     <tr><td><code>sql/07_streamlit.sql</code></td><td>Streamlit app object</td></tr>
     <tr><td><code>sql/08_eval.sql</code></td><td>Loads the golden test worlds</td></tr>
+    <tr><td><code>sql/09_personas.sql</code></td><td>Persona roles and the grants they need to query the semantic view</td></tr>
     <tr><td><code>streamlit/app.py</code></td><td>The seven-page app</td></tr>
     <tr><td><code>scripts/deploy.py</code>, <code>verify.py</code></td><td>Deployment and verification</td></tr>
     <tr><td><code>docs/00</code>–<code>10</code></td><td>Charter, PRD, UX, architecture, metrics, simulation, evaluation, security, brand, demo, handoff</td></tr>
